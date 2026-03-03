@@ -530,3 +530,39 @@ function animate() {
 
 init();
 animate();
+
+// Typewriter effect — works with inner <span>
+window.addEventListener('load', () => {
+    const nameEl = document.querySelector('.hero-title');
+    if (!nameEl) return;
+
+    const staticText = "Hey, I'm ";
+    const highlightText = "Somantha Manuranga";
+
+    nameEl.style.opacity = '1';
+    nameEl.style.animation = 'none';
+    nameEl.style.transform = 'none';
+    nameEl.innerHTML = '';
+
+    let i = 0;
+
+    function type() {
+        if (i <= staticText.length) {
+            nameEl.innerHTML = staticText.slice(0, i) +
+                '<span class="name-highlight"></span>';
+            i++;
+            setTimeout(type, 50);
+        } else {
+            const j = i - staticText.length;
+            if (j <= highlightText.length) {
+                nameEl.innerHTML = staticText +
+                    '<span class="name-highlight">' +
+                    highlightText.slice(0, j) + '</span>';
+                i++;
+                setTimeout(type, 50);
+            }
+        }
+    }
+
+    setTimeout(type, 300);
+});
