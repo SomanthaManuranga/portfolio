@@ -137,9 +137,9 @@
     <div class="project-content">
         <h3>AI-Accelerated Aerodynamics: CNN Surrogate Model</h3>
         <ul>
-  <li>Developed <strong>Deep Learning surrogate model</strong> to predict drag coefficients for 2D shapes, reducing simulation time from hours to milliseconds.</li>
-  <li>Trained on <strong>12,000+ high-fidelity CFD samples</strong>, achieving <strong>&lt;1% relative error</strong> for NACA airfoils.</li>
-  <li>Enabled real-time AI-powered generative design replacing traditional fluid dynamics simulations.</li>
+  <li>Developed a <strong>CNN surrogate model</strong> that predicts the drag coefficient of a 2D shape directly from its image in milliseconds, instead of running a CFD simulation.</li>
+  <li>Trained on <strong>12,000 simulated shapes</strong> (laminar flow, Re = 10) from a public dataset, achieving <strong>0.06&ndash;2.77% relative error</strong> on real-world shapes, including NACA airfoils.</li>
+  <li>Compared <strong>7 CNN architectures</strong>; the final model reached a validation MSE of <strong>0.0017</strong> (B.Sc. thesis).</li>
 </ul>
 <br>
         <div class="project-tags">
@@ -150,10 +150,12 @@
             <span>Python</span>
         </div>
         <div class="project-links">
-            <a href="https://github.com/SomanthaManuranga/Machine-Learning-Model-for-Drag-Prediction-in-2D-Geometries-using-CNN-.." class="project-link" target="_blank">
+            <a href="https://github.com/SomanthaManuranga/cnn-drag-prediction-2d-shapes" class="project-link" target="_blank">
                 <i class="fab fa-github"></i> Source Code
             </a>
-            <!-- Pro-Tip: Since this was a Thesis, if you have a summary PDF, link it! -->
+            <a href="https://github.com/SomanthaManuranga/cnn-drag-prediction-2d-shapes/blob/main/docs/thesis.pdf" class="project-link" target="_blank">
+                <i class="fas fa-file-pdf"></i> Thesis
+            </a>
         </div>
     </div>
 </div>
