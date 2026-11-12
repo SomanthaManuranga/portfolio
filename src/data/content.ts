@@ -427,11 +427,10 @@ export interface Job {
 
 export const experience: Job[] = [
   {
-    // TODO(Somantha): confirm the exact job title and start month.
-    role: 'Working Student · AI Engineering',
+    role: 'Working Student (Werkstudent)',
     company: 'syskomp gehmeyr GmbH',
-    period: '2026 – present',
-    location: 'Germany',
+    period: 'Oct 2026 – present',
+    location: 'Amberg, Germany',
     current: true,
     points: [
       'Applying AI methods to engineering and industrial workflows in a mechanical engineering environment.',
