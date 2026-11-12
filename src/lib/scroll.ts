@@ -2,6 +2,9 @@ import type Lenis from 'lenis';
 
 export const scroll: { lenis: Lenis | null } = { lenis: null };
 
+/** Read by the WebGL scene: stop rendering while an overlay covers the page. */
+export const sceneState = { paused: false };
+
 export function scrollToId(id: string) {
   const target = id === 'top' ? 0 : document.getElementById(id);
   if (target === null) return;
@@ -18,6 +21,7 @@ export function scrollToId(id: string) {
 /** Lock page scroll (modal / mobile menu). */
 export function lockScroll(locked: boolean) {
   document.body.style.overflow = locked ? 'hidden' : '';
+  sceneState.paused = locked;
   if (scroll.lenis) {
     if (locked) scroll.lenis.stop();
     else scroll.lenis.start();

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { sceneState } from '../lib/scroll';
 
 /* ------------------------------------------------------------------ */
 /*  Shared input state (mouse + scroll), written by DOM listeners      */
@@ -62,7 +63,7 @@ float snoise(vec3 v){
 /* ------------------------------------------------------------------ */
 /*  Neural core: noise-displaced icosahedron with fresnel glow         */
 /* ------------------------------------------------------------------ */
-function Core() {
+function Core({ detail }: { detail: number }) {
   const mesh = useRef<THREE.Mesh>(null!);
   const wire = useRef<THREE.LineSegments>(null!);
 
@@ -128,7 +129,7 @@ function Core() {
   return (
     <group>
       <mesh ref={mesh} material={material}>
-        <icosahedronGeometry args={[1, 48]} />
+        <icosahedronGeometry args={[1, detail]} />
       </mesh>
       <lineSegments ref={wire} geometry={wireGeo}>
         <lineBasicMaterial color="#7dd3fc" transparent opacity={0.16} />
@@ -294,7 +295,7 @@ function Rig({ mobile, children }: { mobile: boolean; children: ReactNode }) {
     const h = input.hero;
     // Hero: core sits on the right. After the hero it parks at the right edge, smaller, out of the text column.
     const heroX = mobile ? 0 : 2.3;
-    const targetX = THREE.MathUtils.lerp(heroX, mobile ? 1.6 : 4.4, h);
+    const targetX = THREE.MathUtils.lerp(heroX, mobile ? 1.6 : 4.7, h);
     const targetY = mobile ? THREE.MathUtils.lerp(1.55, 2.4, h) : THREE.MathUtils.lerp(0, 0.6, h);
     const targetScale = THREE.MathUtils.lerp(mobile ? 0.68 : 1, mobile ? 0.55 : 0.8, h);
     const g = group.current;
@@ -312,6 +313,25 @@ function Rig({ mobile, children }: { mobile: boolean; children: ReactNode }) {
   return <group ref={group}>{children}</group>;
 }
 
+/** Drives rendering: full rate in the hero, half rate further down, nothing while hidden or covered. */
+function Ticker() {
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    let raf = 0;
+    let n = 0;
+    const loop = () => {
+      raf = requestAnimationFrame(loop);
+      if (document.hidden || sceneState.paused) return;
+      n++;
+      const pastHero = window.scrollY > window.innerHeight * 0.9;
+      if (!pastHero || n % 2 === 0) invalidate();
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [invalidate]);
+  return null;
+}
+
 export default function Scene({ reducedMotion }: { reducedMotion: boolean }) {
   useInputListeners();
   const mobile = typeof window !== 'undefined' && window.innerWidth < 820;
@@ -323,11 +343,12 @@ export default function Scene({ reducedMotion }: { reducedMotion: boolean }) {
       dpr={[1, lowPower ? 1.5 : 1.8]}
       camera={{ position: [0, 0, 8.5], fov: 42 }}
       gl={{ antialias: !lowPower, alpha: true, powerPreference: 'high-performance' }}
-      frameloop={reducedMotion ? 'demand' : 'always'}
+      frameloop="demand"
       aria-hidden
     >
+      {!reducedMotion && <Ticker />}
       <Rig mobile={mobile}>
-        <Core />
+        <Core detail={lowPower ? 18 : 30} />
         <Orbits />
         <Network count={lowPower ? 70 : 120} />
       </Rig>

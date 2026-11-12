@@ -19,11 +19,11 @@ export default function Nav({ onNavigate }: { onNavigate: (id: string) => void }
 
   // Scroll spy
   useEffect(() => {
-    const sections = nav.map((n) => document.getElementById(n.id)).filter(Boolean) as HTMLElement[];
+    const sections = ['top', ...nav.map((n) => n.id)].map((id) => document.getElementById(id)).filter(Boolean) as HTMLElement[];
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
-          if (e.isIntersecting) setActive(e.target.id);
+          if (e.isIntersecting) setActive(e.target.id === 'top' ? '' : e.target.id);
         });
       },
       { rootMargin: '-45% 0px -50% 0px' },

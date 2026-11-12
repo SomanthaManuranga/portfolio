@@ -153,9 +153,9 @@ function SkillSphere({ tags }: { tags: string[] }) {
         const z2 = -x * sy + z1 * cy;
         const node = items.current[i];
         if (!node) return;
-        const scale = 0.6 + (z2 + 1) * 0.35;
+        const scale = 0.62 + (z2 + 1) * 0.3;
         node.style.transform = `translate(-50%, -50%) translate3d(${x2 * R}px, ${y1 * R}px, 0) scale(${scale})`;
-        node.style.opacity = String(0.25 + ((z2 + 1) / 2) * 0.75);
+        node.style.opacity = String(0.22 + ((z2 + 1) / 2) * 0.78);
         node.style.zIndex = String(Math.round((z2 + 1) * 100));
         node.style.color = z2 > 0.2 ? colors[i % colors.length] : '#8a94ab';
       });
@@ -214,6 +214,13 @@ function SkillSphere({ tags }: { tags: string[] }) {
 
   return (
     <div className="sphere-wrap" ref={wrap} aria-hidden>
+      <svg className="sphere-rings" viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="84" />
+        <ellipse cx="100" cy="100" rx="84" ry="30" />
+        <ellipse cx="100" cy="100" rx="30" ry="84" />
+        <ellipse cx="100" cy="100" rx="84" ry="58" />
+        <ellipse cx="100" cy="100" rx="58" ry="84" />
+      </svg>
       {tags.map((t, i) => (
         <span key={t} className="sphere-tag" ref={(n) => (items.current[i] = n)}>
           {t}
@@ -413,18 +420,34 @@ function Gallery({ images }: { images: string[] }) {
       aria-label="Photos of 3D printer builds and printed parts"
     >
       <AnimatePresence initial={false} custom={dir}>
-        <motion.img
+        <motion.div
           key={images[i]}
-          src={asset(images[i])}
-          alt={`VYROBA TECHS build photo ${i + 1} of ${images.length}`}
-          loading="lazy"
+          className="slide"
           custom={dir}
-          initial={{ opacity: 0, scale: 1.08, x: dir * 40 }}
-          animate={{ opacity: 1, scale: 1, x: 0 }}
-          exit={{ opacity: 0, scale: 0.98, x: -dir * 40 }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-        />
+          initial={{ opacity: 0, x: dir * 60 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -dir * 60 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          drag="x"
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.25}
+          onDragEnd={(_, info) => {
+            if (info.offset.x < -50) go(i + 1);
+            else if (info.offset.x > 50) go(i - 1);
+          }}
+        >
+          <img className="slide-bg" src={asset(images[i])} alt="" aria-hidden draggable={false} />
+          <img
+            className="slide-fg"
+            src={asset(images[i])}
+            alt={`VYROBA TECHS build photo ${i + 1} of ${images.length}`}
+            draggable={false}
+          />
+        </motion.div>
       </AnimatePresence>
+      <span className="gallery-count">
+        {i + 1} / {images.length}
+      </span>
       <button className="gallery-nav prev" onClick={() => go(i - 1)} aria-label="Previous photo">
         <ChevronLeft />
       </button>

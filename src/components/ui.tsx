@@ -6,8 +6,8 @@ export const asset = (path: string) =>
   /^https?:\/\//.test(path) ? path : `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`;
 
 const revealVariants: Variants = {
-  hidden: { opacity: 0, y: 36, filter: 'blur(6px)' },
-  show: { opacity: 1, y: 0, filter: 'blur(0px)' },
+  hidden: { opacity: 0, y: 32 },
+  show: { opacity: 1, y: 0 },
 };
 
 export function Reveal({

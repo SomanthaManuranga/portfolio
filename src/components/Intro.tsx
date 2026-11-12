@@ -26,6 +26,7 @@ export default function Intro({ onDone }: { onDone: () => void }) {
       className="intro"
       initial={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } }}
+      onClick={onDone}
       aria-hidden
     >
       <motion.div className="intro-inner" exit={{ scale: 1.08, filter: 'blur(8px)', transition: { duration: 0.7 } }}>

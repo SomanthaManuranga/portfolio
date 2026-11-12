@@ -8,6 +8,7 @@ import Nav from './components/Nav';
 import Projects from './components/Projects';
 import { Beyond, Contact, Education, Experience, Footer, Skills } from './components/Sections';
 import { skillGroups } from './data/content';
+import { ArrowUp } from 'lucide-react';
 import { scroll, scrollToId } from './lib/scroll';
 
 const Scene = lazy(() => import('./three/Scene'));
@@ -63,6 +64,33 @@ function CursorGlow() {
   return <div className="cursor-glow" ref={ref} aria-hidden />;
 }
 
+function BackToTop() {
+  const { scrollYProgress, scrollY } = useScroll();
+  const [show, setShow] = useState(false);
+  useEffect(() => scrollY.on('change', (y) => setShow(y > 700)), [scrollY]);
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.button
+          className="back-top"
+          onClick={() => scrollToId('top')}
+          aria-label="Back to top"
+          initial={{ opacity: 0, scale: 0.6, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.6, y: 20 }}
+          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <svg viewBox="0 0 48 48" aria-hidden>
+            <circle cx="24" cy="24" r="21" className="back-top-track" />
+            <motion.circle cx="24" cy="24" r="21" className="back-top-ring" style={{ pathLength: scrollYProgress }} />
+          </svg>
+          <ArrowUp />
+        </motion.button>
+      )}
+    </AnimatePresence>
+  );
+}
+
 function Marquee() {
   const words = skillGroups.flatMap((g) => g.items.slice(0, 4));
   const row = [...words, ...words];
@@ -98,7 +126,7 @@ export default function App() {
   }, []);
   const { scrollYProgress, scrollY } = useScroll();
   const [vh] = useState(() => window.innerHeight);
-  const sceneOpacity = useTransform(scrollY, [0, vh * 0.9], [1, 0.4]);
+  const sceneOpacity = useTransform(scrollY, [0, vh * 0.9], [1, 0.32]);
   const progress = useSpring(scrollYProgress, { stiffness: 200, damping: 40 });
 
   // Smooth scrolling
@@ -166,6 +194,7 @@ export default function App() {
         <Contact />
       </main>
       <Footer onTop={() => scrollToId('top')} />
+      <BackToTop />
     </>
   );
 }

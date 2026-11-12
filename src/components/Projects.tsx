@@ -1,5 +1,5 @@
 import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
-import { ArrowUpRight, FileText, PlayCircle, BookOpen, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUpRight, FileText, PlayCircle, BookOpen, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { categories, projects, type Category, type Link, type Project } from '../data/content';
@@ -62,20 +62,52 @@ function SpotlightCard({ p, index, onOpen }: { p: Project; index: number; onOpen
 }
 
 /* ---------------- Modal ---------------- */
-function ProjectModal({ p, onClose }: { p: Project; onClose: () => void }) {
+function ProjectModal({ p, onClose, onStep }: { p: Project; onClose: () => void; onStep: (dir: 1 | -1) => void }) {
+  const boxRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const index = projects.findIndex((x) => x.slug === p.slug);
+  const prev = projects[(index - 1 + projects.length) % projects.length];
+  const next = projects[(index + 1) % projects.length];
+
+  // Lock the page, remember focus, restore both on close
   useEffect(() => {
-    const prev = document.activeElement as HTMLElement | null;
-    closeRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
+    const before = document.activeElement as HTMLElement | null;
     lockScroll(true);
+    closeRef.current?.focus();
     return () => {
-      window.removeEventListener('keydown', onKey);
       lockScroll(false);
-      prev?.focus({ preventScroll: true });
+      before?.focus({ preventScroll: true });
     };
-  }, [onClose]);
+  }, []);
+
+  // Keyboard: Esc closes, arrows step, Tab stays inside the dialog
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      else if (e.key === 'ArrowRight') onStep(1);
+      else if (e.key === 'ArrowLeft') onStep(-1);
+      else if (e.key === 'Tab' && boxRef.current) {
+        const items = boxRef.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled])');
+        if (!items.length) return;
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose, onStep]);
+
+  // New project: back to the top of the dialog
+  useEffect(() => {
+    boxRef.current?.scrollTo({ top: 0 });
+  }, [p.slug]);
 
   return (
     <motion.div
@@ -87,6 +119,7 @@ function ProjectModal({ p, onClose }: { p: Project; onClose: () => void }) {
       data-lenis-prevent
     >
       <motion.div
+        ref={boxRef}
         className="modal"
         role="dialog"
         aria-modal="true"
@@ -98,59 +131,86 @@ function ProjectModal({ p, onClose }: { p: Project; onClose: () => void }) {
         transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
         onClick={(e) => e.stopPropagation()}
       >
-        <button ref={closeRef} className="modal-close" onClick={onClose} aria-label="Close project details">
-          <X />
-        </button>
-        <ProjectVisual slug={p.slug} />
-        <div className="pcard-top">
-          <span className="pcard-cat">{p.category}</span>
+        <div className="modal-bar">
+          <span className="modal-count">
+            {String(index + 1).padStart(2, '0')} / {projects.length}
+          </span>
+          <button ref={closeRef} className="modal-close" onClick={onClose} aria-label="Close project details">
+            <X />
+          </button>
         </div>
-        <h2 id="modal-title">{p.title}</h2>
-        <p className="modal-context">
-          {p.context} · {p.year}
-        </p>
-        <p className="modal-summary" style={{ marginTop: 16 }}>
-          {p.summary}
-        </p>
-        <div className="metrics">
-          {p.metrics.map((m, i) => (
-            <motion.div
-              key={m.label}
-              className="metric"
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 + i * 0.07 }}
-            >
-              <strong>{m.value}</strong>
-              <span>{m.label}</span>
-            </motion.div>
-          ))}
-        </div>
-        <h3>Highlights</h3>
-        <ul className="highlights">
-          {p.highlights.map((h) => (
-            <li key={h}>{h}</li>
-          ))}
-        </ul>
-        <h3>Stack</h3>
-        <div className="chips">
-          {p.tech.map((t) => (
-            <span key={t} className="chip">
-              {t}
+
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={p.slug}
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -24 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <ProjectVisual slug={p.slug} />
+            <div className="pcard-top">
+              <span className="pcard-cat">{p.category}</span>
+            </div>
+            <h2 id="modal-title">{p.title}</h2>
+            <p className="modal-context">
+              {p.context} · {p.year}
+            </p>
+            <p className="modal-summary" style={{ marginTop: 16 }}>
+              {p.summary}
+            </p>
+            <div className="metrics">
+              {p.metrics.map((m) => (
+                <div key={m.label} className="metric">
+                  <strong>{m.value}</strong>
+                  <span>{m.label}</span>
+                </div>
+              ))}
+            </div>
+            <h3>Highlights</h3>
+            <ul className="highlights">
+              {p.highlights.map((h) => (
+                <li key={h}>{h}</li>
+              ))}
+            </ul>
+            <h3>Stack</h3>
+            <div className="chips">
+              {p.tech.map((t) => (
+                <span key={t} className="chip">
+                  {t}
+                </span>
+              ))}
+            </div>
+            {p.links.length > 0 ? (
+              <div className="modal-links">
+                {p.links.map((l) => (
+                  <a key={l.href} className="link-pill" href={l.href} target="_blank" rel="noopener">
+                    {linkIcon(l.kind)} {l.label}
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <p className="modal-note">No public repository for this project. Photos are in the Beyond section below.</p>
+            )}
+          </motion.div>
+        </AnimatePresence>
+
+        <div className="modal-nav">
+          <button onClick={() => onStep(-1)} aria-label={`Previous project: ${prev.title}`}>
+            <ArrowLeft />
+            <span>
+              <small>Previous</small>
+              {prev.title}
             </span>
-          ))}
+          </button>
+          <button onClick={() => onStep(1)} aria-label={`Next project: ${next.title}`}>
+            <span>
+              <small>Next</small>
+              {next.title}
+            </span>
+            <ArrowRight />
+          </button>
         </div>
-        {p.links.length > 0 ? (
-          <div className="modal-links">
-            {p.links.map((l) => (
-              <a key={l.href} className="link-pill" href={l.href} target="_blank" rel="noopener">
-                {linkIcon(l.kind)} {l.label}
-              </a>
-            ))}
-          </div>
-        ) : (
-          <p className="modal-note">No public repository for this project. Photos are in the Beyond section below.</p>
-        )}
       </motion.div>
     </motion.div>
   );
@@ -173,6 +233,15 @@ export default function Projects() {
   const openProject = useCallback((p: Project) => {
     setOpen(p);
     history.replaceState(null, '', `#project/${p.slug}`);
+  }, []);
+  const step = useCallback((dir: 1 | -1) => {
+    setOpen((cur) => {
+      if (!cur) return cur;
+      const i = projects.findIndex((x) => x.slug === cur.slug);
+      const nextP = projects[(i + dir + projects.length) % projects.length];
+      history.replaceState(null, '', `#project/${nextP.slug}`);
+      return nextP;
+    });
   }, []);
   const close = useCallback(() => {
     setOpen(null);
@@ -270,7 +339,7 @@ export default function Projects() {
       </div>
 
       {createPortal(
-        <AnimatePresence>{open && <ProjectModal key={open.slug} p={open} onClose={close} />}</AnimatePresence>,
+        <AnimatePresence>{open && <ProjectModal key="project-modal" p={open} onClose={close} onStep={step} />}</AnimatePresence>,
         document.body,
       )}
     </section>
