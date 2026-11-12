@@ -37,5 +37,11 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # While Settings > Pages > Source is still "Deploy from a branch", GitHub also
+      # publishes the raw repository on every push, and whichever deployment finishes
+      # last is the one visitors get. Waiting here makes this built site finish last.
+      # Once the source is set to "GitHub Actions" this step can be removed.
+      - name: Let the legacy branch deployment finish first
+        run: sleep 75
       - id: deployment
         uses: actions/deploy-pages@v4
