@@ -18,7 +18,7 @@ export const profile = {
     'defect detection on X-ray castings, CNN surrogates that replace CFD runs, document AI for scanned forms, ' +
     'and LLM fine-tuning that removes a jailbreak backdoor on an 8 GB GPU.',
   location: 'Amberg, Germany',
-  availability: 'Open to Werkstudent and AI/ML engineering roles in Germany',
+  availability: 'Working Student in AI at syskomp gehmeyr · M.Sc. AI, graduating 2027',
   email: 'somanthamanuranga@gmail.com',
   phone: '+49 174 7656939',
   phoneHref: 'tel:+491747656939',
@@ -27,7 +27,7 @@ export const profile = {
   cv: 'Somantha_Manuranga_CV.pdf',
   cvDe: 'Somantha_Manuranga_Lebenslauf.pdf',
   portrait: 'images/portrait.webp',
-  rotatingRoles: ['Computer Vision', 'LLMs & NLP', 'Industrial AI', 'Robotics & Digital Twins'],
+  rotatingRoles: ['Computer Vision', 'LLMs & NLP', 'Industrial AI', 'Self-Supervised Vision (JEPA)', 'Robotics & Digital Twins'],
 };
 
 export const stats = [
@@ -379,6 +379,27 @@ export const projects: Project[] = [
     accent: '#f87171',
   },
   {
+    slug: 'production-analytics-dashboard',
+    title: 'Industrial Production Analytics Dashboard',
+    category: 'Data & ML',
+    year: '2025',
+    context: 'Manufacturing analytics',
+    summary:
+      'Interactive Power BI dashboards that track manufacturing KPIs, built on star-schema data models with automated ETL pipelines so cross-functional teams work from the same numbers.',
+    highlights: [
+      'Star-schema data model with DAX measures for production KPIs.',
+      'Automated ETL with Power Query and SQL instead of manual spreadsheet updates.',
+    ],
+    metrics: [
+      { value: 'Power BI', label: 'Dashboards' },
+      { value: 'Star schema', label: 'Data model' },
+      { value: 'ETL', label: 'Automated pipelines' },
+    ],
+    tech: ['Power BI', 'DAX', 'Power Query', 'SQL', 'Star Schema'],
+    links: [],
+    accent: '#facc15',
+  },
+  {
     slug: 'corexy-printer',
     title: 'CoreXY 3D Printer: Mechatronic Build',
     category: 'Engineering AI',
@@ -432,6 +453,7 @@ export const experience: Job[] = [
     company: 'syskomp gehmeyr GmbH',
     period: 'Oct 2026 – present',
     location: 'Amberg, Germany',
+    logo: 'images/logo-syskomp.svg',
     current: true,
     points: [
       'Applying AI methods to engineering and industrial workflows in a mechanical engineering environment.',
@@ -474,7 +496,7 @@ export const education = [
   {
     degree: 'M.Sc. Artificial Intelligence for Industrial Applications',
     school: 'OTH Amberg-Weiden',
-    period: '2025 – 2027 (expected)',
+    period: 'Mar 2025 – 2027 (expected)',
     location: 'Amberg, Germany',
     logo: 'images/logo-oth.webp',
     details: [

@@ -190,7 +190,7 @@ function ProjectModal({ p, onClose, onStep }: { p: Project; onClose: () => void;
                 ))}
               </div>
             ) : (
-              <p className="modal-note">No public repository for this project. Photos are in the Beyond section below.</p>
+              <p className="modal-note">No public repository for this project.</p>
             )}
           </motion.div>
         </AnimatePresence>

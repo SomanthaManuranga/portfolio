@@ -532,8 +532,8 @@ export function Contact() {
             Let's build <span className="grad-text">something real.</span>
           </h2>
           <p>
-            I'm looking for Werkstudent and AI/ML engineering roles in Germany, and I'm always happy to talk about computer
-            vision, LLMs or industrial AI.
+            I'm always happy to talk about computer vision, LLMs and industrial AI, and about thesis topics or AI/ML
+            engineering opportunities in Germany.
           </p>
           <div className="email-row">
             <a className="email-link" href={`mailto:${profile.email}`}>

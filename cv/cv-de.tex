@@ -1,0 +1,232 @@
+% ======================================================================
+%  Somantha Manuranga - Master-Lebenslauf (Deutsch)
+%
+%  Dies ist die MASTER-Version mit allen Stationen und Projekten. Für
+%  eine konkrete Bewerbung die Datei kopieren und Projekte und Zeilen
+%  streichen, die nicht zur Stellenanzeige passen (Ziel: zwei Seiten).
+%
+%  Build:  pdflatex cv-de.tex   (zweimal, wegen der Seitenzahl)
+%   oder:  npm run cv           (im Hauptordner; erzeugt EN + DE)
+%  Layout und persönliche Daten: cv-style.tex
+%  Hinweis: Kein gerades Anführungszeichen (") im Text verwenden.
+% ======================================================================
+\documentclass[a4paper,10pt]{article}
+
+\newcommand{\cvlang}{ngerman}
+\newcommand{\cvpdflang}{de-DE}
+\newcommand{\cvdoctitle}{Lebenslauf}
+\newcommand{\cvpageword}{Seite}
+\input{cv-style}
+
+\begin{document}
+
+% ---------------------------------------------------------------- KOPF
+\cvheader
+  {Amberg, Deutschland \cvsep Nationalität: sri-lankisch \cvsep Telefon: \mbox{\cvphone}}
+  {E-Mail: \mbox{\href{mailto:\cvemail}{\cvemail}} \cvsep GitHub: \mbox{\href{https://\cvgithub}{\cvgithub}}}
+  {LinkedIn: \mbox{\href{https://www.\cvlinkedin}{\cvlinkedin}}}
+  {Portfolio: \mbox{\href{https://\cvportfolio/}{\cvportfolio}}}
+
+% -------------------------------------------------------------- PROFIL
+\section{Profil}
+{\small
+AI Engineer und Masterstudent im Studiengang Artificial Intelligence for Industrial Applications mit Bachelorabschluss
+im Maschinenbau. Werkstudent im Bereich angewandte KI bei der syskomp gehmeyr GmbH, zuvor Berufserfahrung in der
+Luftfahrtkonstruktion und Produktionsautomatisierung. Schwerpunkte: Computer Vision, LLMs/NLP und Machine Learning
+für industrielle Prozesse. Sicher in Python und PyTorch, mit Fokus auf sorgfältige Evaluierung und Modelle, die sich
+produktiv einsetzen lassen (ONNX-Export, regelbasierte Edge-Modelle, kleine GPUs).
+}
+
+% ----------------------------------------------------- BERUFSERFAHRUNG
+\section{Berufserfahrung}
+\cvliststart
+
+  \cventry{syskomp gehmeyr GmbH}{Amberg, Deutschland}
+          {Werkstudent, Teilzeit}{10/2026 -- heute}
+  \cvpointsstart
+    \item Anwendung von KI-Methoden auf Engineering- und Industrieprozesse im Maschinenbauumfeld.
+    \item Entwicklung und Evaluierung von Python-Prototypen mit Fokus auf nachvollziehbare, validierte Ergebnisse.
+    \item Zusammenarbeit mit den Fachabteilungen, um Anforderungen in praxistaugliche KI-Werkzeuge umzusetzen.
+  \cvpointsend
+
+  \cventry{KNSI Aviation Engineering}{Negombo, Sri Lanka}
+          {Design Engineer (Konstruktionsingenieur), Vollzeit}{08/2023 -- 09/2024}
+  \cvpointsstart
+    \item Pflege von Compliance-Daten und technischer Dokumentation mit SQL und Excel nach Luftfahrtstandards.
+    \item Automatisierte SQL-/Excel-Berichtsvorlagen entwickelt; wöchentlichen Reporting-Aufwand um 30\,\% reduziert.
+    \item Produktionsdaten analysiert und Abläufe optimiert; Prozesseffizienz um 40\,\% gesteigert.
+    \item Digitalisierung der Altdokumentation für schnelleren abteilungsübergreifenden Datenzugriff geleitet.
+  \cvpointsend
+
+  \cventry{CBL Group (Ceylon Biscuits Limited)}{Pannipitiya, Sri Lanka}
+          {Praktikant (Internship Trainee), Mechatronik \& Daten}{02/2022 -- 11/2022}
+  \cvpointsstart
+    \item Mitarbeit an der Prozessoptimierung durch datengetriebene Lösungen und Automatisierungsprojekte.
+    \item Unterstützung der End-of-Line-Automatisierung mit Knickarm- und Parallelrobotern.
+    \item 3D-gedruckte Automatisierungskomponenten konstruiert und gefertigt; Beschaffungskosten und Lieferzeiten gesenkt.
+    \item IoT-Sensoren zur Echtzeitüberwachung von Produktionsanlagen als Grundlage für Predictive Maintenance eingesetzt.
+  \cvpointsend
+
+\cvlistend
+
+% --------------------------------------------------------- BILDUNGSWEG
+\section{Bildungsweg}
+\cvliststart
+
+  \cventry{OTH Amberg-Weiden (Ostbayerische Technische Hochschule)}{Amberg, Deutschland}
+          {M.Sc.\ Artificial Intelligence for Industrial Applications}{03/2025 -- heute (Abschluss vorauss.\ 2027)}
+  \cvpointsstart
+    \item Module: Computer Vision, Deep Vision, Deep Learning, NLP \& Information Retrieval, Autonome Robotik,
+          AI Security \& Privacy, Machine Learning, Industrie 4.0.
+  \cvpointsend
+
+  \cventry{Vorbereitung auf das Masterstudium in Deutschland}{Sri Lanka / Deutschland}
+          {Visumverfahren, Umzug und Deutschkurs}{10/2024 -- 02/2025}
+
+  \cventry{University of Sri Jayewardenepura}{Sri Lanka}
+          {B.Sc.\ (Hons) Maschinenbau, Nebenfach Mechatronik \textup{(GPA 3,27 / 4,0)}}{11/2019 -- 05/2023}
+  \cvpointsstart
+    \item Abschlussarbeit: CNN-Surrogatmodell zur Vorhersage des aerodynamischen Widerstands von 2D-Geometrien aus
+          Bildern (ersetzt CFD-Simulationen).
+    \item Projekt: Konstruktion und Bau eines CoreXY-3D-Druckers (mechanisches Design und Machine Learning).
+  \cvpointsend
+
+\cvlistend
+
+% ------------------------------------------------------ FACHKENNTNISSE
+\section{Fachkenntnisse}
+\cvliststart
+  \cvline{Programmierung \& Tools}{Python (fortgeschritten), C++, SQL, Git/GitHub, REST-APIs, pytest, Linux/Bash, LaTeX}
+  \cvline{ML \& Deep Learning}{PyTorch, TensorFlow/Keras, scikit-learn, XGBoost, LightGBM, CatBoost, Optuna, CNN, RNN}
+  \cvline{Computer Vision}{OpenCV, YOLOv8, Objekterkennung, semantische Segmentierung (U-Net, DeepLabV3+), Vision Transformers, Grad-CAM, ONNX}
+  \cvline{NLP \& generative KI}{Hugging Face Transformers, LLMs (Qwen, Llama, GPT), Fine-Tuning (LoRA/PEFT), RAG, LangChain, agentische Workflows, SciBERT, LayoutLMv3, Tesseract OCR}
+  \cvline{Robotik \& Industrie 4.0}{Webots, SLAM, Pfadplanung (A*), PID-Regelung, MQTT, digitale Zwillinge, IoT}
+  \cvline{Daten \& Backend}{pandas, NumPy, Matplotlib, Seaborn, MongoDB, Power BI, ETL-Pipelines, Flask, Weights \& Biases}
+  \cvline{Maschinenbau}{CAD/CAM, SolidWorks, CFD-Simulation, 3D-Druck, Mechatronik}
+\cvlistend
+
+% ------------------------------------------------------------ PROJEKTE
+\section{Projekte}
+\cvliststart
+
+  \cvgroup{Industrielle KI \& Computer Vision}
+
+  \cvproject{Fehlererkennung in Röntgenbildern von Gussteilen}{YOLOv8, OpenCV, ONNX}{2026}
+  \cvpointsstart
+    \item YOLOv8n zur Erkennung von Poren, Einschlüssen und Lunkern in GDXray-Röntgenbildern von Aluminiumguss
+          trainiert (Split auf Serienebene): Test-mAP50 0,545, Precision 0,748.
+    \item Fehleranalyse nach Defektgröße und CLAHE-Ablation; ONNX-Export mit identischen Detektionen (60 ms/Bild, CPU).
+  \cvpointsend
+
+  \cvproject{Korrosionssegmentierung: U-Net vs. DeepLabV3+}{PyTorch, segmentation-models-pytorch}{2026}
+  \cvpointsstart
+    \item Pixelgenaue Segmentierung von vier Korrosionszuständen auf Fotos von Stahlbrücken: mittlere IoU 0,523;
+          U-Net ist bei der sicherheitskritischen Klasse \glqq Severe\grqq{} deutlich besser (IoU 0,325 vs. 0,266).
+  \cvpointsend
+
+  \cvproject{CNN-Surrogatmodell für den Luftwiderstand (Bachelorarbeit)}{TensorFlow, Keras, CFD}{2023}
+  \cvpointsstart
+    \item CNN sagt den Widerstandsbeiwert von 2D-Geometrien aus Bildern in Millisekunden statt per CFD-Simulation
+          vorher; trainiert mit 12.000 simulierten Formen nach Vergleich von 7 Architekturen (Validierungs-MSE 0,0017).
+    \item 0,06--2,77\,\% relativer Fehler bei unbekannten realen Formen inkl. NACA-Profilen (Referenz: SolidWorks).
+  \cvpointsend
+
+  \cvproject{Dashboard für industrielle Produktionskennzahlen}{Power BI, DAX, Power Query, SQL}{2025}
+  \cvpointsstart
+    \item Power-BI-Dashboards auf Basis von Sternschema-Modellen mit automatisierten ETL-Pipelines für Fertigungs-KPIs.
+  \cvpointsend
+
+  \cvproject{Stacking-Ensemble \& regelbasiertes Edge-Modell}{XGBoost, LightGBM, CatBoost, Optuna}{2025/26}
+  \cvpointsstart
+    \item Mit Optuna optimiertes Stacking-Ensemble mit R\textsuperscript{2} 0,848 bei 273 Merkmalen; drei
+          If-else-Regeln (R\textsuperscript{2} 0,915) abgeleitet, die ohne ML-Bibliotheken auf einem Edge-Gerät laufen.
+  \cvpointsend
+
+  \cvproject{Pneumonie-Erkennung: CNN vs. ViT vs. Hybrid}{PyTorch, timm, Grad-CAM}{2026}
+  \cvpointsstart
+    \item ResNet-50, ViT-Base und TinyViT unter identischen Bedingungen verglichen (5-fach-CV-Ensembles): TinyViT
+          erreicht 94,9\,\% Testgenauigkeit (F1 0,948); Aussagekraft der Grad-CAM-Erklärungen bewertet.
+  \cvpointsend
+
+  \cvproject{Simulation eines digitalen IR-Thermometers}{Python, NumPy, Signalverarbeitung}{2025}
+  \cvpointsstart
+    \item Physikbasierte Sensorsimulation (Rauschen, Drift, Emissionsgradfehler, Ausreißer) mit Filterung.
+  \cvpointsend
+
+  \cvgroup{LLMs, NLP \& Dokumenten-KI}
+
+  \cvproject{Entfernen von Jailbreak-Backdoors aus LLMs}{PyTorch, Hugging Face, LoRA/PEFT}{2026}
+  \cvpointsstart
+    \item Bekannte Backdoor aus Qwen2.5-1.5B per hybridem Supervised Fine-Tuning mit vier Datengruppen auf einer
+          8-GB-GPU entfernt: Angriffserfolgsrate von 95\,\% auf 1,7\,\% gesenkt bei 84\,\% Benign Accuracy.
+    \item Mechanistische Analyse mit linearen Probes: Der Trigger wird weiterhin erkannt (ca. 97\,\%); die Abwehr
+          ändert die Reaktion des Modells, löscht den Trigger aber nicht.
+  \cvpointsend
+
+  \cvproject{QuantumCircuit Dataset Builder}{SciBERT, Transformers, BeautifulSoup, PyMuPDF}{2025/26}
+  \cvpointsstart
+    \item Automatisierte Pipeline, die arXiv-Paper nach Quantenschaltkreis-Abbildungen durchsucht; SciBERT-Klassifikator
+          für Bildunterschriften (F1 0,954) liefert 250 Metadatensätze und 160 extrahierte Bilder.
+  \cvpointsend
+
+  \cvproject{Formularverständnis mit LayoutLMv3}{LayoutLMv3, Hugging Face, Tesseract OCR}{2026}
+  \cvpointsstart
+    \item LayoutLMv3 für die Schlüssel-Wert-Extraktion aus gescannten Formularen (FUNSD) trainiert: F1 0,896.
+  \cvpointsend
+
+  \cvgroup{Robotik \& Industrie 4.0}
+
+  \cvproject{Autonome Labyrinth-Navigation mit ROSbot}{Webots, SLAM, A*, PID, OpenCV}{2026}
+  \cvpointsstart
+    \item ROSbot erkundet unbekannte Labyrinthe mit LiDAR- und Tiefenkamera-Kartierung, Frontier Exploration,
+          A*-Planung und PID-Regelung; 4 von 5 Labyrinthen vollständig gelöst, schnellster Lauf 54 Sekunden.
+  \cvpointsend
+
+  \cvproject{ALIA-Delivery: Digitaler Zwilling eines Klinikroboters}{Webots, MQTT, Flask, A*}{2025}
+  \cvpointsstart
+    \item Digitaler Zwilling einer Klinikstation (Teamprojekt): Ein TurtleBot3 erhält Lieferaufträge per MQTT von
+          einem Flask-Leitstand, plant A*-Routen und fährt zum Patientenzimmer.
+  \cvpointsend
+
+  \cvproject{CoreXY-3D-Drucker}{Mechatronik, CAD/CAM, Firmware}{B.Sc.-Projekt}
+  \cvpointsstart
+    \item CoreXY-3D-Drucker von Grund auf konstruiert und gebaut: mechanisches Design, Kinematik und Firmware.
+  \cvpointsend
+
+  \cvgroup{Datenanalyse}
+
+  \cvproject{Study Program Intelligence}{Python, pandas, Monte Carlo, MCDA}{2026}
+  \cvpointsstart
+    \item Reproduzierbare Analyse, welcher neue Studiengang die meisten Studierenden an die OTH Amberg-Weiden bringt:
+          multikriterielle Entscheidungsanalyse unter Unsicherheit mit 10.000 Monte-Carlo-Ziehungen.
+  \cvpointsend
+
+  \cvproject{Social-Media-Nutzung von Studierenden: EDA}{pandas, Seaborn, Matplotlib}{2025}
+  \cvpointsstart
+    \item Explorative Analyse von 705 Studierenden aus 110 Ländern; Nutzungsdauer korreliert mit Schlaf (r = $-$0,79).
+  \cvpointsend
+
+\cvlistend
+
+% --------------------------------------------------------- ZERTIFIKATE
+\section{Weiterbildung \& Zertifikate}
+\cvliststart
+  \cvline{09/2025}{Bayerisch-Tschechische KI-Sommerschule, \glqq Controlling Robots with LLMs\grqq{} (32 Stunden), Speinshart}
+  \cvline{DeepLearning.AI}{Deep Learning Specialization; Natural Language Processing Specialization (4 Kurse); AI for Medicine Specialization (3 Kurse)}
+  \cvline{Vortrag}{\glqq Adaptive-RAG\grqq{} (NAACL-2024-Paper): 25-minütiger wissenschaftlicher Vortrag, Modul AI Conference, OTH Amberg-Weiden, Sommersemester 2026}
+\cvlistend
+
+% ------------------------------------------------------------ SPRACHEN
+\section{Sprachen}
+\cvliststart
+  \item {\small \textbf{Englisch:} C1 (verhandlungssicher) \cvsep \textbf{Deutsch:} B1 (wird aktiv ausgebaut) \cvsep \textbf{Singhalesisch:} Muttersprache}
+\cvlistend
+
+% ---------------------------------------------------------- ENGAGEMENT
+\section{Engagement \& Interessen}
+\cvliststart
+  \cvline{Unternehmertum}{VYROBA TECHS: CoreXY-3D-Drucker gebaut und in der Pandemie ein kleines Sonderteile-Geschäft betrieben}
+  \cvline{Fußball}{Spieler beim FC Amberg; ehemaliger Kapitän der Fakultäts- und Universitätsmannschaft; University Colours Award 2022}
+\cvlistend
+
+\end{document}
