@@ -25,6 +25,7 @@ export const profile = {
   github: GH,
   linkedin: 'https://www.linkedin.com/in/somantha-manuranga-b73432192',
   cv: 'Somantha_Manuranga_CV.pdf',
+  cvDe: 'Somantha_Manuranga_Lebenslauf.pdf',
   portrait: 'images/portrait.webp',
   rotatingRoles: ['Computer Vision', 'LLMs & NLP', 'Industrial AI', 'Robotics & Digital Twins'],
 };
@@ -381,7 +382,7 @@ export const projects: Project[] = [
     slug: 'corexy-printer',
     title: 'CoreXY 3D Printer: Mechatronic Build',
     category: 'Engineering AI',
-    year: '2021–2023',
+    year: '2019–2023',
     context: 'B.Sc. project & VYROBA TECHS venture',
     summary:
       'Designed and built a CoreXY 3D printer from scratch during my mechanical engineering degree, integrating mechanical design with data-driven process tuning, then used it to run a small manufacturing business.',
@@ -442,8 +443,8 @@ export const experience: Job[] = [
   {
     role: 'Design Engineer',
     company: 'KNSI Aviation Engineering',
-    period: 'Aug 2023 – Aug 2024',
-    location: 'Sri Lanka',
+    period: 'Aug 2023 – Sep 2024',
+    location: 'Negombo, Sri Lanka',
     logo: 'images/logo-knsi.webp',
     points: [
       'Managed compliance data workflows and technical documentation with SQL and Excel for aviation standards.',
@@ -454,10 +455,10 @@ export const experience: Job[] = [
     tags: ['SQL', 'Excel', 'Data Management', 'Automation'],
   },
   {
-    role: 'Trainee Mechatronic Engineer',
-    company: 'Ceylon Biscuits Limited (CBL Group)',
-    period: 'Feb 2022 – Jul 2023',
-    location: 'Colombo, Sri Lanka',
+    role: 'Internship Trainee, Mechatronics & Data',
+    company: 'CBL Group (Ceylon Biscuits Limited)',
+    period: 'Feb 2022 – Nov 2022',
+    location: 'Pannipitiya, Sri Lanka',
     logo: 'images/logo-cbl.webp',
     points: [
       'Contributed to process optimisation through data-driven solutions and automation projects.',

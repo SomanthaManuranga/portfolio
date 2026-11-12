@@ -20,6 +20,16 @@ All text, projects, metrics and links live in **[`src/data/content.ts`](src/data
 - Projects: add an object to `projects` (set `featured: true` to show it in the large spotlight grid).
 - Images go in `public/images/` (WebP recommended). The CV is `public/Somantha_Manuranga_CV.pdf`.
 
+## CV
+
+The CV is generated from `cv/build.mjs` as two A4 PDFs, English and German:
+
+```bash
+npm run cv   # writes public/Somantha_Manuranga_CV.pdf and public/Somantha_Manuranga_Lebenslauf.pdf
+```
+
+Edit the `en` and `de` objects in that file, then rebuild. It needs Chrome or Edge installed.
+
 ## Development
 
 ```bash

@@ -557,7 +557,10 @@ export function Contact() {
               <MapPin /> {profile.location}
             </span>
             <a className="link-pill" href={asset(profile.cv)} target="_blank" rel="noopener">
-              <Download /> CV (PDF)
+              <Download /> CV (English)
+            </a>
+            <a className="link-pill" href={asset(profile.cvDe)} target="_blank" rel="noopener">
+              <Download /> Lebenslauf (Deutsch)
             </a>
           </div>
         </Reveal>

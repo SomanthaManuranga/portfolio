@@ -1,4 +1,5 @@
 node_modules
 dist
+cv/out
 *.local
 .DS_Store
