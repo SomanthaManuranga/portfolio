@@ -1,36 +1,19 @@
-import { GraduationCap } from 'lucide-react';
-import { useRef } from 'react';
 import { principles, profile, stats } from '../data/content';
 import { asset, CountUp, Reveal, SectionHead } from './ui';
 
 function Portrait() {
-  const ref = useRef<HTMLDivElement>(null);
-  const onMove = (e: React.PointerEvent) => {
-    const el = ref.current;
-    if (!el || e.pointerType !== 'mouse') return;
-    const r = el.getBoundingClientRect();
-    const x = (e.clientX - r.left) / r.width;
-    const y = (e.clientY - r.top) / r.height;
-    el.style.transform = `rotateY(${(x - 0.5) * 14}deg) rotateX(${(0.5 - y) * 14}deg)`;
-    el.style.setProperty('--sx', `${x * 100}%`);
-    el.style.setProperty('--sy', `${y * 100}%`);
-  };
-  const reset = () => {
-    if (ref.current) ref.current.style.transform = '';
-  };
   return (
-    <div className="portrait-wrap">
-      <div ref={ref} className="portrait-card glass" onPointerMove={onMove} onPointerLeave={reset}>
-        <img src={asset(profile.portrait)} alt={`Portrait of ${profile.name}`} width={900} height={900} loading="lazy" />
-        <div className="portrait-shine" />
-        <div className="portrait-tag glass t1">
-          <GraduationCap size={14} /> M.Sc. <b>AI · OTH</b>
-        </div>
-        <div className="portrait-tag glass t2">
-          <span className="status-dot" /> B.Sc. <b>Mech. Eng.</b>
-        </div>
-      </div>
-    </div>
+    <figure className="portrait">
+      <img src={asset(profile.portrait)} alt={`Portrait of ${profile.name}`} width={1024} height={1024} loading="lazy" />
+      <span className="corner tl" aria-hidden />
+      <span className="corner tr" aria-hidden />
+      <span className="corner bl" aria-hidden />
+      <span className="corner br" aria-hidden />
+      <figcaption>
+        <b>{profile.name}</b>
+        <span>{profile.location}</span>
+      </figcaption>
+    </figure>
   );
 }
 
