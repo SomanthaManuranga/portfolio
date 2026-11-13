@@ -13,12 +13,11 @@ export const profile = {
   role: 'AI Engineer',
   tagline: 'Computer vision, LLMs and industrial AI, built on a mechanical engineering foundation.',
   summary:
-    "I'm an AI engineer and M.Sc. student in Artificial Intelligence for Industrial Applications at OTH Amberg-Weiden. " +
-    'I came to AI from mechanical engineering, so I build models that have to hold up outside the notebook: ' +
-    'defect detection on X-ray castings, CNN surrogates that replace CFD runs, document AI for scanned forms, ' +
-    'and LLM fine-tuning that removes a jailbreak backdoor on an 8 GB GPU.',
+    'AI engineer and M.Sc. student in Artificial Intelligence for Industrial Applications at OTH Amberg-Weiden, with a ' +
+    'mechanical engineering background. I work on computer vision, LLMs and automation, and I care about careful ' +
+    'evaluation and models small enough to deploy.',
   location: 'Amberg, Germany',
-  availability: 'Working Student in AI at syskomp gehmeyr · M.Sc. AI, graduating 2027',
+  availability: 'AI and Automation Werkstudent at syskomp gehmeyr GmbH',
   email: 'somanthamanuranga@gmail.com',
   phone: '+49 174 7656939',
   phoneHref: 'tel:+491747656939',
@@ -449,7 +448,7 @@ export interface Job {
 
 export const experience: Job[] = [
   {
-    role: 'Working Student (Werkstudent)',
+    role: 'AI and Automation Werkstudent',
     company: 'syskomp gehmeyr GmbH',
     period: 'Oct 2026 – present',
     location: 'Amberg, Germany',
@@ -537,11 +536,11 @@ export const skillGroups = [
   },
   {
     title: 'Data & Backend',
-    items: ['Python', 'C++', 'SQL', 'pandas', 'NumPy', 'MongoDB', 'Power BI', 'Flask', 'REST APIs'],
+    items: ['Python', 'C++', 'SQL', 'pandas', 'NumPy', 'MongoDB', 'Power BI', 'REST APIs'],
   },
   {
     title: 'Tools',
-    items: ['Git / GitHub', 'Jupyter', 'Weights & Biases', 'pytest', 'Linux / Bash', 'LaTeX'],
+    items: ['Git / GitHub', 'Jupyter', 'Weights & Biases', 'pytest', 'LaTeX'],
   },
 ];
 
@@ -611,7 +610,7 @@ export const beyond = [
   {
     title: 'Sports & leadership',
     text: 'Player at FC Amberg in Germany. Former captain of the engineering faculty and university football teams in Sri Lanka, and University Colours Award for sports excellence (2022).',
-    image: 'images/sports-football.webp',
+    image: 'images/sports-award.webp',
   },
   {
     title: 'Languages',

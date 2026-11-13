@@ -1,28 +1,6 @@
-import { AnimatePresence, motion, useScroll, useSpring } from 'framer-motion';
-import {
-  ArrowUp,
-  Award,
-  Bot,
-  Brain,
-  Briefcase,
-  Check,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  Copy,
-  Database,
-  Eye,
-  ExternalLink,
-  FileText,
-  Mail,
-  MapPin,
-  Phone,
-  Presentation,
-  ScrollText,
-  Wrench,
-  Download,
-} from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowUp, ArrowUpRight, Check, ChevronLeft, ChevronRight, Copy, Download, FileText } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import {
   beyond,
   certifications,
@@ -40,68 +18,53 @@ import { asset, GithubIcon, LinkedinIcon, Reveal, SectionHead } from './ui';
 /*  Experience                                                         */
 /* ================================================================== */
 export function Experience() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 75%', 'end 60%'] });
-  const scaleY = useSpring(scrollYProgress, { stiffness: 120, damping: 30 });
-
   return (
     <section className="section" id="experience">
       <div className="container">
         <SectionHead
-          eyebrow="03 · Experience"
+          eyebrow="03 / Experience"
           title={
             <>
-              Industry experience, <span className="grad-text">engineering first</span>
+              Industry experience, <span className="accent">engineering first</span>
             </>
           }
-          sub="From robotic production lines and aviation design to applied AI in German industry."
         />
-        <div className="timeline" ref={ref}>
-          <div className="timeline-rail" aria-hidden>
-            <motion.div className="timeline-fill" style={{ scaleY }} />
-          </div>
+        <div className="rows">
           {experience.map((job, i) => (
-            <Reveal key={job.company} delay={0.05 * i} as="article" className="job glass">
-              <span className={`job-node ${job.current ? 'current' : ''}`} aria-hidden />
-              <div className="job-head">
-                <div className="job-title">
-                  {job.logo ? (
-                    <div className="job-logo">
+            <Reveal key={job.company} delay={0.05 * i} as="article" className="row">
+              <div className="row-when label">
+                {job.current && (
+                  <span className="now">
+                    <span className="status-dot" /> Current
+                  </span>
+                )}
+                <span>{job.period}</span>
+                <span>{job.location}</span>
+              </div>
+              <div>
+                <div className="row-title">
+                  {job.logo && (
+                    <div className="row-logo">
                       <img src={asset(job.logo)} alt={`${job.company} logo`} loading="lazy" />
-                    </div>
-                  ) : (
-                    <div className="job-logo placeholder" aria-hidden>
-                      <Briefcase />
                     </div>
                   )}
                   <div>
                     <h3>{job.role}</h3>
-                    <div className="job-company">{job.company}</div>
+                    <div className="row-org">{job.company}</div>
                   </div>
                 </div>
-                <div className="job-when">
-                  {job.current && (
-                    <>
-                      <span className="now">Current</span>
-                      <br />
-                    </>
-                  )}
-                  {job.period}
-                  <br />
-                  {job.location}
+                <ul>
+                  {job.points.map((pt) => (
+                    <li key={pt}>{pt}</li>
+                  ))}
+                </ul>
+                <div className="chips">
+                  {job.tags.map((t) => (
+                    <span key={t} className="chip">
+                      {t}
+                    </span>
+                  ))}
                 </div>
-              </div>
-              <ul>
-                {job.points.map((pt) => (
-                  <li key={pt}>{pt}</li>
-                ))}
-              </ul>
-              <div className="chips">
-                {job.tags.map((t) => (
-                  <span key={t} className="chip">
-                    {t}
-                  </span>
-                ))}
               </div>
             </Reveal>
           ))}
@@ -112,163 +75,32 @@ export function Experience() {
 }
 
 /* ================================================================== */
-/*  Skills: interactive 3D tag sphere                                  */
+/*  Skills                                                             */
 /* ================================================================== */
-function SkillSphere({ tags }: { tags: string[] }) {
-  const wrap = useRef<HTMLDivElement>(null);
-  const items = useRef<(HTMLSpanElement | null)[]>([]);
-
-  const points = useMemo(() => {
-    const n = tags.length;
-    return tags.map((_, i) => {
-      const phi = Math.acos(1 - (2 * (i + 0.5)) / n);
-      const theta = Math.PI * (1 + Math.sqrt(5)) * i;
-      return [Math.cos(theta) * Math.sin(phi), Math.sin(theta) * Math.sin(phi), Math.cos(phi)];
-    });
-  }, [tags]);
-
-  useEffect(() => {
-    const el = wrap.current;
-    if (!el) return;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let vx = 0.003;
-    let vy = 0.0045;
-    let rx = 0;
-    let ry = 0;
-    let dragging = false;
-    let lx = 0;
-    let ly = 0;
-    let raf = 0;
-    let visible = true;
-    const colors = ['#5eead4', '#818cf8', '#f472b6', '#7dd3fc', '#c4b5fd'];
-
-    const render = () => {
-      const R = el.clientWidth * (el.clientWidth < 440 ? 0.33 : 0.42);
-      const cx = Math.cos(rx), sx = Math.sin(rx), cy = Math.cos(ry), sy = Math.sin(ry);
-      points.forEach(([x, y, z], i) => {
-        // rotate around X then Y
-        const y1 = y * cx - z * sx;
-        const z1 = y * sx + z * cx;
-        const x2 = x * cy + z1 * sy;
-        const z2 = -x * sy + z1 * cy;
-        const node = items.current[i];
-        if (!node) return;
-        const scale = 0.62 + (z2 + 1) * 0.3;
-        node.style.transform = `translate(-50%, -50%) translate3d(${x2 * R}px, ${y1 * R}px, 0) scale(${scale})`;
-        node.style.opacity = String(0.22 + ((z2 + 1) / 2) * 0.78);
-        node.style.zIndex = String(Math.round((z2 + 1) * 100));
-        node.style.color = z2 > 0.2 ? colors[i % colors.length] : '#8a94ab';
-      });
-    };
-
-    const tick = () => {
-      if (!dragging) {
-        rx += vx;
-        ry += vy;
-        vx += (0.003 - vx) * 0.02;
-        vy += (0.0045 - vy) * 0.02;
-      }
-      render();
-      raf = visible ? requestAnimationFrame(tick) : 0;
-    };
-
-    const down = (e: PointerEvent) => {
-      dragging = true;
-      lx = e.clientX;
-      ly = e.clientY;
-      el.setPointerCapture(e.pointerId);
-    };
-    const move = (e: PointerEvent) => {
-      if (!dragging) return;
-      const dx = e.clientX - lx;
-      const dy = e.clientY - ly;
-      lx = e.clientX;
-      ly = e.clientY;
-      vy = dx * 0.006;
-      vx = -dy * 0.006;
-      rx += vx;
-      ry += vy;
-    };
-    const up = () => (dragging = false);
-
-    const io = new IntersectionObserver(([entry]) => {
-      visible = entry.isIntersecting;
-      if (visible && !raf && !reduced) raf = requestAnimationFrame(tick);
-    });
-
-    render();
-    if (!reduced) io.observe(el);
-    el.addEventListener('pointerdown', down);
-    el.addEventListener('pointermove', move);
-    el.addEventListener('pointerup', up);
-    el.addEventListener('pointercancel', up);
-    return () => {
-      cancelAnimationFrame(raf);
-      io.disconnect();
-      el.removeEventListener('pointerdown', down);
-      el.removeEventListener('pointermove', move);
-      el.removeEventListener('pointerup', up);
-      el.removeEventListener('pointercancel', up);
-    };
-  }, [points]);
-
-  return (
-    <div className="sphere-wrap" ref={wrap} aria-hidden>
-      <svg className="sphere-rings" viewBox="0 0 200 200">
-        <circle cx="100" cy="100" r="84" />
-        <ellipse cx="100" cy="100" rx="84" ry="30" />
-        <ellipse cx="100" cy="100" rx="30" ry="84" />
-        <ellipse cx="100" cy="100" rx="84" ry="58" />
-        <ellipse cx="100" cy="100" rx="58" ry="84" />
-      </svg>
-      {tags.map((t, i) => (
-        <span key={t} className="sphere-tag" ref={(n) => (items.current[i] = n)}>
-          {t}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-const groupIcons = [Brain, Eye, ScrollText, Bot, Database, Wrench];
-
 export function Skills() {
-  const tags = useMemo(() => skillGroups.flatMap((g) => g.items.slice(0, 5)), []);
   return (
     <section className="section" id="skills">
       <div className="container">
         <SectionHead
-          eyebrow="04 · Toolkit"
+          eyebrow="04 / Toolkit"
           title={
             <>
-              The <span className="grad-text">stack</span> behind the work
+              The <span className="accent">stack</span> behind the work
             </>
           }
-          sub="Drag the sphere to spin it. The groups show where each tool fits in my work."
         />
-        <div className="skills-grid">
-          <Reveal>
-            <SkillSphere tags={tags} />
-          </Reveal>
-          <div className="skill-groups">
-            {skillGroups.map((g, i) => {
-              const Icon = groupIcons[i % groupIcons.length];
-              return (
-                <Reveal key={g.title} delay={0.05 * i} className="skill-group glass">
-                  <h3>
-                    <Icon /> {g.title}
-                  </h3>
-                  <div className="chips">
-                    {g.items.map((s) => (
-                      <span key={s} className="chip">
-                        {s}
-                      </span>
-                    ))}
-                  </div>
-                </Reveal>
-              );
-            })}
-          </div>
+        <div className="skill-cols">
+          {skillGroups.map((g, i) => (
+            <Reveal key={g.title} delay={0.05 * i} className="skill-col">
+              <span className="label">0{i + 1}</span>
+              <h3>{g.title}</h3>
+              <ul>
+                {g.items.map((s) => (
+                  <li key={s}>{s}</li>
+                ))}
+              </ul>
+            </Reveal>
+          ))}
         </div>
       </div>
     </section>
@@ -276,38 +108,43 @@ export function Skills() {
 }
 
 /* ================================================================== */
-/*  Education, certifications, talks                                   */
+/*  Education, talks, certificates, endorsements                       */
 /* ================================================================== */
-export function Education() {
+export function Background() {
   return (
     <section className="section" id="education">
       <div className="container">
         <SectionHead
-          eyebrow="05 · Learning"
+          eyebrow="05 / Education"
           title={
             <>
-              Education & <span className="grad-text">continuous learning</span>
+              Education and <span className="accent">continuous learning</span>
             </>
           }
         />
-        <div className="edu-grid">
+        <div className="rows">
           {education.map((e, i) => (
-            <Reveal key={e.school} delay={0.08 * i} as="article" className="edu glass">
-              <div className="edu-top">
-                <div className="edu-logo">
-                  <img src={asset(e.logo)} alt={`${e.school} logo`} loading="lazy" />
+            <Reveal key={e.school} delay={0.05 * i} as="article" className="row">
+              <div className="row-when label">
+                <span>{e.period}</span>
+                <span>{e.location}</span>
+              </div>
+              <div>
+                <div className="row-title">
+                  <div className="row-logo">
+                    <img src={asset(e.logo)} alt={`${e.school} logo`} loading="lazy" />
+                  </div>
+                  <div>
+                    <h3>{e.degree}</h3>
+                    <div className="row-org">{e.school}</div>
+                  </div>
                 </div>
-                <span className="chip">{e.period}</span>
+                <ul style={{ marginBottom: 0 }}>
+                  {e.details.map((d) => (
+                    <li key={d}>{d}</li>
+                  ))}
+                </ul>
               </div>
-              <h3>{e.degree}</h3>
-              <div className="edu-school">
-                {e.school} · {e.location}
-              </div>
-              <ul>
-                {e.details.map((d) => (
-                  <li key={d}>{d}</li>
-                ))}
-              </ul>
             </Reveal>
           ))}
         </div>
@@ -316,30 +153,18 @@ export function Education() {
           <h3 className="subhead">Talks</h3>
         </Reveal>
         {talks.map((t) => (
-          <Reveal key={t.title} as="article" className="talk glass">
-            <div className="talk-icon" aria-hidden>
-              <Presentation />
-            </div>
+          <Reveal key={t.title} className="list-row">
             <div>
               <h4>{t.title}</h4>
-              <div className="venue">{t.venue}</div>
-              <p>{t.summary}</p>
-              <div className="talk-foot">
-                <div className="chips">
-                  {t.tags.map((tag) => (
-                    <span key={tag} className="chip">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <div className="chips">
-                  {t.links.map((l) => (
-                    <a key={l.href} className="link-pill" href={asset(l.href)} target="_blank" rel="noopener">
-                      {l.label === 'Slides' ? <FileText /> : <ExternalLink />} {l.label}
-                    </a>
-                  ))}
-                </div>
-              </div>
+              <span className="label">{t.venue}</span>
+            </div>
+            <p>{t.summary}</p>
+            <div style={{ display: 'grid', gap: 10 }}>
+              {t.links.map((l) => (
+                <a key={l.href} className="text-link" href={asset(l.href)} target="_blank" rel="noopener">
+                  {l.label === 'Slides' ? <FileText /> : <ArrowUpRight />} {l.label}
+                </a>
+              ))}
             </div>
           </Reveal>
         ))}
@@ -347,40 +172,32 @@ export function Education() {
         <Reveal>
           <h3 className="subhead">Certifications</h3>
         </Reveal>
-        <div className="cert-grid">
-          {certifications.map((c, i) => (
-            <Reveal key={c.title} delay={0.06 * i}>
-              <a className="cert glass" href={c.href} target="_blank" rel="noopener" style={{ height: '100%' }}>
-                <span className="cert-icon" aria-hidden>
-                  <Award />
-                </span>
+        {certifications.map((c, i) => (
+          <Reveal key={c.title} delay={0.04 * i}>
+            <a className="list-row" href={c.href} target="_blank" rel="noopener">
+              <div>
                 <h4>{c.title}</h4>
-                <span className="issuer">{c.issuer}</span>
-                <p>{c.note}</p>
-                <span className="more">
-                  View certificate <ExternalLink />
-                </span>
-              </a>
-            </Reveal>
-          ))}
-        </div>
+                <span className="label">{c.issuer}</span>
+              </div>
+              <p>{c.note}</p>
+              <span className="go label">
+                Certificate <ArrowUpRight />
+              </span>
+            </a>
+          </Reveal>
+        ))}
 
         <Reveal>
           <h3 className="subhead">Endorsements</h3>
         </Reveal>
         <div className="quotes">
           {endorsements.map((q, i) => (
-            <Reveal key={q.name} delay={0.08 * i} as="article" className="quote glass">
-              <div className="quote-mark" aria-hidden>
-                “
-              </div>
+            <Reveal key={q.name} delay={0.08 * i} as="article" className="quote">
               <blockquote>{q.quote}</blockquote>
-              <div className="quote-who">
-                <strong>{q.name}</strong>
-                <span>
-                  {q.title} · {q.org}
-                </span>
-              </div>
+              <strong>{q.name}</strong>
+              <span className="label">
+                {q.title} · {q.org}
+              </span>
             </Reveal>
           ))}
         </div>
@@ -396,8 +213,8 @@ function Gallery({ images }: { images: string[] }) {
   const [i, setI] = useState(0);
   const [dir, setDir] = useState(1);
   const paused = useRef(false);
-  const go = (n: number) => {
-    setDir(n > i || (i === images.length - 1 && n === 0) ? 1 : -1);
+  const go = (n: number, d: number) => {
+    setDir(d);
     setI((n + images.length) % images.length);
   };
   useEffect(() => {
@@ -407,7 +224,7 @@ function Gallery({ images }: { images: string[] }) {
         setDir(1);
         setI((x) => (x + 1) % images.length);
       }
-    }, 4200);
+    }, 4800);
     return () => clearInterval(t);
   }, [images.length]);
 
@@ -423,41 +240,34 @@ function Gallery({ images }: { images: string[] }) {
         <motion.div
           key={images[i]}
           className="slide"
-          custom={dir}
-          initial={{ opacity: 0, x: dir * 60 }}
+          initial={{ opacity: 0, x: dir * 50 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -dir * 60 }}
+          exit={{ opacity: 0, x: -dir * 50 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           drag="x"
           dragConstraints={{ left: 0, right: 0 }}
           dragElastic={0.25}
           onDragEnd={(_, info) => {
-            if (info.offset.x < -50) go(i + 1);
-            else if (info.offset.x > 50) go(i - 1);
+            if (info.offset.x < -50) go(i + 1, 1);
+            else if (info.offset.x > 50) go(i - 1, -1);
           }}
         >
           <img className="slide-bg" src={asset(images[i])} alt="" aria-hidden draggable={false} />
-          <img
-            className="slide-fg"
-            src={asset(images[i])}
-            alt={`VYROBA TECHS build photo ${i + 1} of ${images.length}`}
-            draggable={false}
-          />
+          <img className="slide-fg" src={asset(images[i])} alt={`VYROBA TECHS build photo ${i + 1} of ${images.length}`} draggable={false} />
         </motion.div>
       </AnimatePresence>
-      <span className="gallery-count">
-        {i + 1} / {images.length}
-      </span>
-      <button className="gallery-nav prev" onClick={() => go(i - 1)} aria-label="Previous photo">
-        <ChevronLeft />
-      </button>
-      <button className="gallery-nav next" onClick={() => go(i + 1)} aria-label="Next photo">
-        <ChevronRight />
-      </button>
-      <div className="gallery-dots">
-        {images.map((_, n) => (
-          <button key={n} className={n === i ? 'active' : ''} onClick={() => go(n)} aria-label={`Show photo ${n + 1}`} />
-        ))}
+      <div className="gallery-bar">
+        <span className="label">
+          {String(i + 1).padStart(2, '0')} / {String(images.length).padStart(2, '0')}
+        </span>
+        <div>
+          <button onClick={() => go(i - 1, -1)} aria-label="Previous photo">
+            <ChevronLeft />
+          </button>
+          <button onClick={() => go(i + 1, 1)} aria-label="Next photo">
+            <ChevronRight />
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -468,24 +278,21 @@ export function Beyond() {
     <section className="section" id="beyond">
       <div className="container">
         <SectionHead
-          eyebrow="06 · Beyond the code"
+          eyebrow="06 / Beyond"
           title={
             <>
-              Maker, teammate, <span className="grad-text">founder</span>
+              Maker, teammate, <span className="accent">founder</span>
             </>
           }
-          sub="Building physical things, leading teams on the pitch, and settling into a new country and language."
         />
-        <Reveal className="venture glass">
+        <Reveal className="venture">
           <div className="venture-text">
-            <span className="venture-badge">Entrepreneurship</span>
+            <span className="label accent">Entrepreneurship</span>
             <h3>{venture.name}</h3>
             <p>{venture.text}</p>
             <ul>
               {venture.points.map((p) => (
-                <li key={p}>
-                  <CheckCircle2 /> {p}
-                </li>
+                <li key={p}>{p}</li>
               ))}
             </ul>
           </div>
@@ -493,9 +300,10 @@ export function Beyond() {
         </Reveal>
         <div className="beyond-grid">
           {beyond.map((b, i) => (
-            <Reveal key={b.title} delay={0.08 * i} as="article" className="beyond-card glass">
+            <Reveal key={b.title} delay={0.08 * i} as="article" className={`beyond-card ${b.image.includes('telc') ? 'logo' : ''}`}>
               <img src={asset(b.image)} alt={b.title} loading="lazy" />
               <div>
+                <span className="label">0{i + 1}</span>
                 <h4>{b.title}</h4>
                 <p>{b.text}</p>
               </div>
@@ -522,47 +330,44 @@ export function Contact() {
     }
   };
   return (
-    <section className="section" id="contact">
+    <section className="section contact" id="contact">
       <div className="container">
-        <Reveal className="contact glass">
-          <div className="eyebrow" style={{ justifyContent: 'center' }}>
-            07 · Contact
-          </div>
+        <Reveal>
+          <span className="label">07 / Contact</span>
           <h2>
-            Let's build <span className="grad-text">something real.</span>
+            Let's <span className="accent">talk</span>
           </h2>
+        </Reveal>
+        <Reveal delay={0.1} className="contact-row">
           <p>
             I'm always happy to talk about computer vision, LLMs and industrial AI, and about thesis topics or AI/ML
             engineering opportunities in Germany.
           </p>
-          <div className="email-row">
+          <div className="email-wrap">
             <a className="email-link" href={`mailto:${profile.email}`}>
               {profile.email}
             </a>
-            <button className="copy-btn" onClick={copy} aria-live="polite">
+            <button className="copy-btn label" onClick={copy} aria-live="polite">
               {copied ? <Check /> : <Copy />} {copied ? 'Copied' : 'Copy'}
             </button>
           </div>
-          <div className="contact-cards">
-            <a className="link-pill" href={profile.linkedin} target="_blank" rel="noopener">
-              <LinkedinIcon /> LinkedIn
-            </a>
-            <a className="link-pill" href={profile.github} target="_blank" rel="noopener">
-              <GithubIcon /> GitHub
-            </a>
-            <a className="link-pill" href={profile.phoneHref}>
-              <Phone /> {profile.phone}
-            </a>
-            <span className="link-pill">
-              <MapPin /> {profile.location}
-            </span>
-            <a className="link-pill" href={asset(profile.cv)} target="_blank" rel="noopener">
-              <Download /> CV (English)
-            </a>
-            <a className="link-pill" href={asset(profile.cvDe)} target="_blank" rel="noopener">
-              <Download /> Lebenslauf (Deutsch)
-            </a>
-          </div>
+        </Reveal>
+        <Reveal delay={0.15} className="contact-links">
+          <a className="text-link" href={profile.linkedin} target="_blank" rel="noopener">
+            <LinkedinIcon /> LinkedIn
+          </a>
+          <a className="text-link" href={profile.github} target="_blank" rel="noopener">
+            <GithubIcon /> GitHub
+          </a>
+          <a className="text-link" href={profile.phoneHref}>
+            {profile.phone}
+          </a>
+          <a className="text-link" href={asset(profile.cv)} target="_blank" rel="noopener">
+            <Download /> CV (English)
+          </a>
+          <a className="text-link" href={asset(profile.cvDe)} target="_blank" rel="noopener">
+            <Download /> Lebenslauf (Deutsch)
+          </a>
         </Reveal>
       </div>
     </section>
@@ -572,18 +377,13 @@ export function Contact() {
 export function Footer({ onTop }: { onTop: () => void }) {
   return (
     <footer className="site-footer">
-      <div className="container footer-inner">
+      <div className="container footer-inner label">
         <span>
-          © {new Date().getFullYear()} {profile.name} · Built with React, Three.js and Framer Motion
+          © {new Date().getFullYear()} {profile.name} · {profile.location}
         </span>
-        <span style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
-          <a href={`mailto:${profile.email}`} aria-label="Email" className="to-top">
-            <Mail />
-          </a>
-          <button className="to-top" onClick={onTop}>
-            Back to top <ArrowUp />
-          </button>
-        </span>
+        <button className="to-top label" onClick={onTop}>
+          Back to top <ArrowUp />
+        </button>
       </div>
     </footer>
   );

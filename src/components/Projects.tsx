@@ -1,67 +1,16 @@
-import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, ArrowUpRight, FileText, PlayCircle, BookOpen, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, FileText, PlayCircle, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { categories, projects, type Category, type Link, type Project } from '../data/content';
-import { GithubIcon, Reveal, SectionHead } from './ui';
-import ProjectVisual from './ProjectVisual';
 import { lockScroll } from '../lib/scroll';
+import ProjectVisual from './ProjectVisual';
+import { GithubIcon, Reveal, SectionHead } from './ui';
 
 const linkIcon = (kind: Link['kind']) =>
   kind === 'code' ? <GithubIcon /> : kind === 'demo' ? <PlayCircle /> : kind === 'paper' ? <BookOpen /> : <FileText />;
 
-const accentStyle = (p: Project) => ({ '--accent': p.accent }) as React.CSSProperties;
-
-/* ---------------- Spotlight card with 3D tilt ---------------- */
-function SpotlightCard({ p, index, onOpen }: { p: Project; index: number; onOpen: (p: Project) => void }) {
-  const ref = useRef<HTMLButtonElement>(null);
-  const onMove = (e: React.PointerEvent) => {
-    const el = ref.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const x = (e.clientX - r.left) / r.width;
-    const y = (e.clientY - r.top) / r.height;
-    el.style.setProperty('--mx', `${x * 100}%`);
-    el.style.setProperty('--my', `${y * 100}%`);
-    if (e.pointerType === 'mouse') el.style.transform = `perspective(1000px) rotateY(${(x - 0.5) * 6}deg) rotateX(${(0.5 - y) * 6}deg)`;
-  };
-  const reset = () => {
-    if (ref.current) ref.current.style.transform = '';
-  };
-  const m = p.metrics[0];
-  return (
-    <Reveal delay={0.06 * index}>
-      <button
-        ref={ref}
-        className="pcard glass"
-        style={accentStyle(p)}
-        onPointerMove={onMove}
-        onPointerLeave={reset}
-        onClick={() => onOpen(p)}
-        aria-haspopup="dialog"
-      >
-        <ProjectVisual slug={p.slug} />
-        <div className="pcard-top">
-          <span className="pcard-cat">{p.category}</span>
-          <span>{p.year}</span>
-        </div>
-        <h3>{p.title}</h3>
-        <p className="pcard-summary">{p.summary}</p>
-        <div className="pcard-metric">
-          <div>
-            <strong>{m.value}</strong>
-            <small>{m.label}</small>
-          </div>
-          <span className="pcard-open" aria-hidden>
-            <ArrowUpRight />
-          </span>
-        </div>
-      </button>
-    </Reveal>
-  );
-}
-
-/* ---------------- Modal ---------------- */
+/* ---------------- Detail panel ---------------- */
 function ProjectModal({ p, onClose, onStep }: { p: Project; onClose: () => void; onStep: (dir: 1 | -1) => void }) {
   const boxRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -104,7 +53,7 @@ function ProjectModal({ p, onClose, onStep }: { p: Project; onClose: () => void;
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose, onStep]);
 
-  // New project: back to the top of the dialog
+  // New project: back to the top of the panel
   useEffect(() => {
     boxRef.current?.scrollTo({ top: 0 });
   }, [p.slug]);
@@ -115,6 +64,7 @@ function ProjectModal({ p, onClose, onStep }: { p: Project; onClose: () => void;
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
       onClick={onClose}
       data-lenis-prevent
     >
@@ -124,74 +74,71 @@ function ProjectModal({ p, onClose, onStep }: { p: Project; onClose: () => void;
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        style={accentStyle(p)}
-        initial={{ opacity: 0, y: 40, scale: 0.97 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 20, scale: 0.98 }}
-        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        initial={{ x: '100%' }}
+        animate={{ x: 0 }}
+        exit={{ x: '100%' }}
+        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-bar">
-          <span className="modal-count">
-            {String(index + 1).padStart(2, '0')} / {projects.length}
+          <span className="label">
+            Project {String(index + 1).padStart(2, '0')} / {projects.length}
           </span>
           <button ref={closeRef} className="modal-close" onClick={onClose} aria-label="Close project details">
-            <X />
+            Close <X />
           </button>
         </div>
 
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={p.slug}
-            initial={{ opacity: 0, x: 24 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -24 }}
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
           >
             <ProjectVisual slug={p.slug} />
-            <div className="pcard-top">
-              <span className="pcard-cat">{p.category}</span>
-            </div>
-            <h2 id="modal-title">{p.title}</h2>
-            <p className="modal-context">
-              {p.context} · {p.year}
-            </p>
-            <p className="modal-summary" style={{ marginTop: 16 }}>
-              {p.summary}
-            </p>
-            <div className="metrics">
-              {p.metrics.map((m) => (
-                <div key={m.label} className="metric">
-                  <strong>{m.value}</strong>
-                  <span>{m.label}</span>
-                </div>
-              ))}
-            </div>
-            <h3>Highlights</h3>
-            <ul className="highlights">
-              {p.highlights.map((h) => (
-                <li key={h}>{h}</li>
-              ))}
-            </ul>
-            <h3>Stack</h3>
-            <div className="chips">
-              {p.tech.map((t) => (
-                <span key={t} className="chip">
-                  {t}
-                </span>
-              ))}
-            </div>
-            {p.links.length > 0 ? (
-              <div className="modal-links">
-                {p.links.map((l) => (
-                  <a key={l.href} className="link-pill" href={l.href} target="_blank" rel="noopener">
-                    {linkIcon(l.kind)} {l.label}
-                  </a>
+            <div className="modal-body">
+              <span className="label accent">{p.category}</span>
+              <h2 id="modal-title">{p.title}</h2>
+              <p className="label">
+                {p.context} · {p.year}
+              </p>
+              <p className="modal-summary">{p.summary}</p>
+              <div className="metrics">
+                {p.metrics.map((m) => (
+                  <div key={m.label} className="metric">
+                    <strong>{m.value}</strong>
+                    <span>{m.label}</span>
+                  </div>
                 ))}
               </div>
-            ) : (
-              <p className="modal-note">No public repository for this project.</p>
-            )}
+              <h3>Highlights</h3>
+              <ul className="highlights">
+                {p.highlights.map((h) => (
+                  <li key={h}>{h}</li>
+                ))}
+              </ul>
+              <h3>Stack</h3>
+              <div className="chips">
+                {p.tech.map((t) => (
+                  <span key={t} className="chip">
+                    {t}
+                  </span>
+                ))}
+              </div>
+              {p.links.length > 0 ? (
+                <div className="modal-links">
+                  {p.links.map((l) => (
+                    <a key={l.href} className="text-link" href={l.href} target="_blank" rel="noopener">
+                      {linkIcon(l.kind)} {l.label}
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="modal-note">No public repository for this project.</p>
+              )}
+            </div>
           </motion.div>
         </AnimatePresence>
 
@@ -199,13 +146,13 @@ function ProjectModal({ p, onClose, onStep }: { p: Project; onClose: () => void;
           <button onClick={() => onStep(-1)} aria-label={`Previous project: ${prev.title}`}>
             <ArrowLeft />
             <span>
-              <small>Previous</small>
+              <small className="label">Previous</small>
               {prev.title}
             </span>
           </button>
           <button onClick={() => onStep(1)} aria-label={`Next project: ${next.title}`}>
             <span>
-              <small>Next</small>
+              <small className="label">Next</small>
               {next.title}
             </span>
             <ArrowRight />
@@ -222,6 +169,9 @@ type Filter = 'All' | Category;
 export default function Projects() {
   const [open, setOpen] = useState<Project | null>(null);
   const [filter, setFilter] = useState<Filter>('All');
+  const [hover, setHover] = useState<Project | null>(null);
+  const preview = useRef<HTMLDivElement>(null);
+
   const featured = projects.filter((p) => p.featured);
   const filtered = useMemo(() => (filter === 'All' ? projects : projects.filter((p) => p.category === filter)), [filter]);
   const counts = useMemo(() => {
@@ -231,6 +181,7 @@ export default function Projects() {
   }, []);
 
   const openProject = useCallback((p: Project) => {
+    setHover(null);
     setOpen(p);
     history.replaceState(null, '', `#project/${p.slug}`);
   }, []);
@@ -263,83 +214,103 @@ export default function Projects() {
     return () => window.removeEventListener('hashchange', fromHash);
   }, []);
 
+  // The preview card trails the cursor over the featured list (mouse only)
+  const onListMove = (e: React.PointerEvent) => {
+    if (e.pointerType !== 'mouse' || !preview.current) return;
+    const w = 300;
+    const x = Math.min(e.clientX + 30, window.innerWidth - w - 16);
+    const y = Math.min(e.clientY + 26, window.innerHeight - 160);
+    preview.current.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  };
+
   return (
     <section className="section" id="projects">
       <div className="container">
         <SectionHead
-          eyebrow="02 · Selected work"
+          eyebrow="02 / Work"
           title={
             <>
-              Projects with <span className="grad-text">measured results</span>
+              Projects with <span className="accent">measured results</span>
             </>
           }
-          sub="LLM safety, computer vision, document AI and engineering surrogates. Every number below comes from a held-out evaluation in the project's public repository. Open a card for details."
+          sub="Every number comes from a held-out evaluation in the project's public repository. Select a project for details."
         />
 
-        <div className="spotlight">
-          {featured.map((p, i) => (
-            <SpotlightCard key={p.slug} p={p} index={i} onOpen={openProject} />
-          ))}
-        </div>
+        <Reveal>
+          <ol className="work-list" onPointerMove={onListMove} onPointerLeave={() => setHover(null)}>
+            {featured.map((p, i) => (
+              <li key={p.slug}>
+                <button
+                  className="work-row"
+                  onClick={() => openProject(p)}
+                  onPointerEnter={(e) => e.pointerType === 'mouse' && setHover(p)}
+                  aria-haspopup="dialog"
+                >
+                  <span className="label">{String(i + 1).padStart(2, '0')}</span>
+                  <h3>{p.title}</h3>
+                  <span className="cat label">
+                    {p.category}
+                    <br />
+                    {p.year}
+                  </span>
+                  <span className="wm">
+                    <strong>{p.metrics[0].value}</strong>
+                    <span className="label">{p.metrics[0].label}</span>
+                  </span>
+                  <ArrowUpRight className="arrow" aria-hidden />
+                </button>
+              </li>
+            ))}
+          </ol>
+        </Reveal>
 
         <div className="all-projects">
           <Reveal className="all-head">
             <h3>All projects</h3>
-            <LayoutGroup id="filters">
-              <div className="filters" role="tablist" aria-label="Filter projects by category">
-                {(['All', ...categories] as Filter[]).map((c) => (
-                  <button
-                    key={c}
-                    role="tab"
-                    aria-selected={filter === c}
-                    className={`filter ${filter === c ? 'active' : ''}`}
-                    onClick={() => setFilter(c)}
-                  >
-                    {filter === c && <motion.span layoutId="filter-bg" className="filter-bg" transition={{ type: 'spring', stiffness: 400, damping: 34 }} />}
-                    <span>
-                      {c}
-                      <span className="count">{counts[c] ?? 0}</span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </LayoutGroup>
+            <div className="filters" role="tablist" aria-label="Filter projects by category">
+              {(['All', ...categories] as Filter[]).map((c) => (
+                <button key={c} role="tab" aria-selected={filter === c} className={`filter ${filter === c ? 'active' : ''}`} onClick={() => setFilter(c)}>
+                  {c}
+                  <span className="count">{counts[c] ?? 0}</span>
+                </button>
+              ))}
+            </div>
           </Reveal>
 
-          <motion.div layout className="plist">
+          <ul className="ptable">
             <AnimatePresence mode="popLayout" initial={false}>
               {filtered.map((p) => (
-                <motion.div
+                <motion.li
                   key={p.slug}
                   layout
-                  initial={{ opacity: 0, scale: 0.94 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.94 }}
-                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
                 >
-                  <button className="prow glass" style={accentStyle(p)} onClick={() => openProject(p)} aria-haspopup="dialog">
-                    <span className="pcard-top" style={{ width: '100%' }}>
-                      <span className="pcard-cat">{p.category}</span>
-                      <span>{p.year}</span>
-                    </span>
+                  <button className="prow" onClick={() => openProject(p)} aria-haspopup="dialog">
+                    <span className="y label">{p.year}</span>
                     <h4>{p.title}</h4>
-                    <p>{p.summary}</p>
-                    <span className="prow-foot">
-                      <span>
-                        <strong>{p.metrics[0].value}</strong> · {p.metrics[0].label}
-                      </span>
-                      <ArrowUpRight size={16} />
+                    <span className="c label">{p.category}</span>
+                    <span className="m">
+                      <b>{p.metrics[0].value}</b> · {p.metrics[0].label}
                     </span>
+                    <ArrowUpRight aria-hidden />
                   </button>
-                </motion.div>
+                </motion.li>
               ))}
             </AnimatePresence>
-          </motion.div>
+          </ul>
         </div>
       </div>
 
       {createPortal(
-        <AnimatePresence>{open && <ProjectModal key="project-modal" p={open} onClose={close} onStep={step} />}</AnimatePresence>,
+        <>
+          <div ref={preview} className={`work-preview ${hover && !open ? 'on' : ''}`} aria-hidden>
+            {hover && <ProjectVisual slug={hover.slug} />}
+          </div>
+          <AnimatePresence>{open && <ProjectModal key="project-modal" p={open} onClose={close} onStep={step} />}</AnimatePresence>
+        </>,
         document.body,
       )}
     </section>

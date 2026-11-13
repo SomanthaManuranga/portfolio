@@ -9,7 +9,7 @@ function Portrait() {
       <span className="corner tr" aria-hidden />
       <span className="corner bl" aria-hidden />
       <span className="corner br" aria-hidden />
-      <figcaption>
+      <figcaption className="label">
         <b>{profile.name}</b>
         <span>{profile.location}</span>
       </figcaption>
@@ -21,28 +21,21 @@ export default function About() {
   return (
     <section className="section" id="about">
       <div className="container">
-        <SectionHead eyebrow="01 · About" title={<>From mechanical systems <span className="grad-text">to intelligent ones.</span></>} />
+        <SectionHead eyebrow="01 / About" title={<>From mechanical systems to <span className="accent">intelligent ones</span></>} />
         <div className="about-grid">
           <div>
             <Reveal>
               <p className="about-lead">
-                I build AI that has to survive contact with the real world: <em>factory floors</em>, X-ray inspection lines,
-                scanned paperwork and <em>robots</em> that start without a map.
+                I build AI for the physical world: factory floors, inspection lines and robots.
               </p>
             </Reveal>
-            <Reveal delay={0.1}>
+            <Reveal delay={0.08}>
               <p className="about-body">{profile.summary}</p>
             </Reveal>
-            <Reveal delay={0.15}>
-              <p className="about-body">
-                Before Germany I worked as a design engineer in aviation and as a mechatronics trainee on robotic production lines.
-                That background shapes how I work: careful evaluation, honest failure analysis and models small enough to deploy.
-              </p>
-            </Reveal>
-            <div className="stats" style={{ marginTop: 32 }}>
+            <div className="stats">
               {stats.map((s, i) => (
-                <Reveal key={s.label} delay={0.08 * i} className="stat glass">
-                  <div className="stat-value grad-text">
+                <Reveal key={s.label} delay={0.06 * i} className="stat">
+                  <div className="stat-value">
                     <CountUp to={s.value} suffix={s.suffix} />
                   </div>
                   <div className="stat-label">{s.label}</div>
@@ -57,8 +50,8 @@ export default function About() {
 
         <div className="principles">
           {principles.map((p, i) => (
-            <Reveal key={p.title} delay={0.08 * i} className="principle glass">
-              <span className="principle-num">0{i + 1} / principle</span>
+            <Reveal key={p.title} delay={0.06 * i} className="principle">
+              <span className="label">0{i + 1}</span>
               <h3>{p.title}</h3>
               <p>{p.text}</p>
             </Reveal>

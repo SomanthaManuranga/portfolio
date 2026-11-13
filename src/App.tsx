@@ -1,14 +1,13 @@
 import { AnimatePresence, motion, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
 import Lenis from 'lenis';
-import { Component, lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Component, lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from 'react';
 import About from './components/About';
 import Hero from './components/Hero';
 import Intro from './components/Intro';
 import Nav from './components/Nav';
 import Projects from './components/Projects';
-import { Beyond, Contact, Education, Experience, Footer, Skills } from './components/Sections';
-import { skillGroups } from './data/content';
-import { ArrowUp } from 'lucide-react';
+import { Beyond, Contact, Background, Experience, Footer, Skills } from './components/Sections';
+import { nav, profile } from './data/content';
 import { scroll, scrollToId } from './lib/scroll';
 
 const Scene = lazy(() => import('./three/Scene'));
@@ -36,72 +35,42 @@ function hasWebGL() {
   }
 }
 
-function CursorGlow() {
-  const ref = useRef<HTMLDivElement>(null);
+/** Small fixed read-outs in the bottom corners: where you are on the page. */
+function CornerHud() {
+  const { scrollYProgress } = useScroll();
+  const progress = useSpring(scrollYProgress, { stiffness: 200, damping: 40 });
+  const [index, setIndex] = useState(0);
+  const [atEnd, setAtEnd] = useState(false);
+  useEffect(() => scrollYProgress.on('change', (v) => setAtEnd(v > 0.985)), [scrollYProgress]);
+
   useEffect(() => {
-    let x = window.innerWidth / 2,
-      y = window.innerHeight / 3,
-      cx = x,
-      cy = y,
-      raf = 0;
-    const move = (e: PointerEvent) => {
-      x = e.clientX;
-      y = e.clientY;
-      if (!raf) raf = requestAnimationFrame(tick);
-    };
-    const tick = () => {
-      cx += (x - cx) * 0.12;
-      cy += (y - cy) * 0.12;
-      if (ref.current) ref.current.style.transform = `translate3d(${cx}px, ${cy}px, 0)`;
-      raf = Math.abs(x - cx) + Math.abs(y - cy) > 0.5 ? requestAnimationFrame(tick) : 0;
-    };
-    window.addEventListener('pointermove', move, { passive: true });
-    return () => {
-      window.removeEventListener('pointermove', move);
-      cancelAnimationFrame(raf);
-    };
+    const ids = ['top', ...nav.map((n) => n.id)];
+    const els = ids.map((id) => document.getElementById(id)).filter(Boolean) as HTMLElement[];
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => e.isIntersecting && setIndex(ids.indexOf(e.target.id))),
+      { rootMargin: '-45% 0px -50% 0px' },
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
   }, []);
-  return <div className="cursor-glow" ref={ref} aria-hidden />;
-}
 
-function BackToTop() {
-  const { scrollYProgress, scrollY } = useScroll();
-  const [show, setShow] = useState(false);
-  useEffect(() => scrollY.on('change', (y) => setShow(y > 700)), [scrollY]);
+  const label = index === 0 ? 'Intro' : nav[index - 1].label;
   return (
-    <AnimatePresence>
-      {show && (
-        <motion.button
-          className="back-top"
-          onClick={() => scrollToId('top')}
-          aria-label="Back to top"
-          initial={{ opacity: 0, scale: 0.6, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.6, y: 20 }}
-          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <svg viewBox="0 0 48 48" aria-hidden>
-            <circle cx="24" cy="24" r="21" className="back-top-track" />
-            <motion.circle cx="24" cy="24" r="21" className="back-top-ring" style={{ pathLength: scrollYProgress }} />
-          </svg>
-          <ArrowUp />
-        </motion.button>
-      )}
-    </AnimatePresence>
-  );
-}
-
-function Marquee() {
-  const words = skillGroups.flatMap((g) => g.items.slice(0, 4));
-  const row = [...words, ...words];
-  return (
-    <div className="marquee" aria-hidden>
-      <div className="marquee-track">
-        {row.map((w, i) => (
-          <span key={i}>{w}</span>
-        ))}
+    <>
+      <div className={`corner-hud left label ${index === 0 ? '' : 'off'}`} aria-hidden>
+        <span>{profile.location}</span>
+        <span>49.44° N, 11.85° E</span>
       </div>
-    </div>
+      <div className={`corner-hud right label ${atEnd ? 'off' : ''}`} aria-hidden>
+        <span>
+          <b>{String(index).padStart(2, '0')}</b> / {String(nav.length).padStart(2, '0')}
+        </span>
+        <span className="bar">
+          <motion.span style={{ scaleX: progress }} />
+        </span>
+        <span>{label}</span>
+      </div>
+    </>
   );
 }
 
@@ -124,15 +93,18 @@ export default function App() {
     }
     setIntro(false);
   }, []);
-  const { scrollYProgress, scrollY } = useScroll();
+
+  // The scene is bright in the hero and at the very end, quiet behind the content in between
+  const { scrollY, scrollYProgress } = useScroll();
   const [vh] = useState(() => window.innerHeight);
-  const sceneOpacity = useTransform(scrollY, [0, vh * 0.9], [1, 0.32]);
-  const progress = useSpring(scrollYProgress, { stiffness: 200, damping: 40 });
+  const heroFade = useTransform(scrollY, [0, vh * 0.9], [1, 0.3]);
+  const endFade = useTransform(scrollYProgress, [0.92, 1], [0, 0.45]);
+  const sceneOpacity = useTransform([heroFade, endFade], ([a, b]: number[]) => Math.min(1, a + b));
 
   // Smooth scrolling
   useEffect(() => {
     if (reduced) return;
-    const lenis = new Lenis({ lerp: 0.1, smoothWheel: true });
+    const lenis = new Lenis({ lerp: 0.09, smoothWheel: true });
     scroll.lenis = lenis;
     let raf = requestAnimationFrame(function loop(t) {
       lenis.raf(t);
@@ -165,12 +137,9 @@ export default function App() {
       <a href="#main" className="skip-link">
         Skip to content
       </a>
-      <motion.div className="progress-bar" style={{ scaleX: progress }} aria-hidden />
-      <div className="bg-gradient" aria-hidden />
-      <div className="bg-grid" aria-hidden />
       {showScene && (
         <motion.div className="scene-layer" style={{ opacity: sceneOpacity }} aria-hidden>
-          <motion.div style={{ width: '100%', height: '100%' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.6 }}>
+          <motion.div style={{ width: '100%', height: '100%' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 2 }}>
             <SceneBoundary>
               <Suspense fallback={null}>
                 <Scene reducedMotion={reduced} />
@@ -179,22 +148,21 @@ export default function App() {
           </motion.div>
         </motion.div>
       )}
-      {!reduced && <CursorGlow />}
+      <div className="vignette" aria-hidden />
 
       <Nav onNavigate={scrollToId} />
       <main id="main">
         <Hero key={intro ? 'pre' : 'live'} onNavigate={scrollToId} />
-        <Marquee />
         <About />
         <Projects />
         <Experience />
         <Skills />
-        <Education />
+        <Background />
         <Beyond />
         <Contact />
       </main>
       <Footer onTop={() => scrollToId('top')} />
-      <BackToTop />
+      <CornerHud />
     </>
   );
 }

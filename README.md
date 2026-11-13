@@ -6,12 +6,12 @@ Personal portfolio: an interactive 3D site built with **React, Three.js (react-t
 
 ## Highlights
 
-- Shader-driven 3D "neural core" (noise-displaced icosahedron, orbit rings, network graph, particle field) that reacts to scrolling and the mouse
-- Short boot intro (once per session), HUD panels with real project metrics, magnetic buttons, smooth scrolling
-- 14 projects with animated per-project visuals, category filters and a detail modal with shareable links (`#project/<slug>`)
-- Experience timeline, draggable 3D skill sphere, education, talks, certifications, endorsements and a photo gallery
+- One calm 3D scene for the whole page: a dark machined gimbal lit by a light that follows the cursor; scrolling turns the rings and moves the object
+- Restrained art direction: near-black background, off-white type, a single accent colour, wide uppercase headings and hairlines
+- 15 projects: a numbered featured list with hover previews, a filterable table, and a slide-in detail panel with shareable links (`#project/<slug>`)
+- Experience, toolkit, education, talks, certifications, endorsements and a photo gallery
 - Responsive from 320 px phones to wide desktops; respects `prefers-reduced-motion`; falls back gracefully without WebGL
-- Three.js is lazy-loaded after first paint and images are WebP, so the text is interactive immediately
+- Three.js is lazy-loaded after first paint and renders on demand, so text is interactive immediately
 
 ## Editing content
 

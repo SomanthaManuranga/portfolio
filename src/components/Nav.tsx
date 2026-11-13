@@ -1,9 +1,9 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Menu, X, Download } from 'lucide-react';
+import { Download, Menu, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { nav, profile } from '../data/content';
-import { asset } from './ui';
 import { lockScroll } from '../lib/scroll';
+import { asset } from './ui';
 
 export default function Nav({ onNavigate }: { onNavigate: (id: string) => void }) {
   const [scrolled, setScrolled] = useState(false);
@@ -50,23 +50,19 @@ export default function Nav({ onNavigate }: { onNavigate: (id: string) => void }
       <header className={`nav ${scrolled || open ? 'scrolled' : ''}`}>
         <nav className="container nav-inner" aria-label="Main">
           <a href="#top" className="brand" onClick={(e) => go(e, 'top')}>
-            <span className="brand-mark">SM</span>
-            <span>{profile.shortName}</span>
+            {profile.name} <span>/ {profile.role}</span>
           </a>
           <ul className="nav-links">
             {nav.map((n) => (
               <li key={n.id}>
                 <a href={`#${n.id}`} className={active === n.id ? 'active' : ''} onClick={(e) => go(e, n.id)}>
-                  {active === n.id && (
-                    <motion.span layoutId="nav-pill" className="nav-pill" transition={{ type: 'spring', stiffness: 380, damping: 32 }} />
-                  )}
                   {n.label}
                 </a>
               </li>
             ))}
           </ul>
-          <a className="btn btn-ghost nav-cta" href={asset(profile.cv)} target="_blank" rel="noopener">
-            <Download /> CV
+          <a className="btn nav-cta" href={asset(profile.cv)} target="_blank" rel="noopener">
+            CV <Download />
           </a>
           <button className="menu-btn" aria-label={open ? 'Close menu' : 'Open menu'} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
             {open ? <X /> : <Menu />}
@@ -77,25 +73,27 @@ export default function Nav({ onNavigate }: { onNavigate: (id: string) => void }
         {open && (
           <motion.div
             className="mobile-menu"
-            initial={{ opacity: 0, y: -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.3 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
           >
             {nav.map((n, i) => (
               <motion.a
                 key={n.id}
+                className="item"
                 href={`#${n.id}`}
                 onClick={(e) => go(e, n.id)}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.04 * i }}
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.04 * i, duration: 0.4 }}
               >
+                <small>{String(i + 1).padStart(2, '0')}</small>
                 {n.label}
               </motion.a>
             ))}
             <a className="btn btn-primary" href={asset(profile.cv)} target="_blank" rel="noopener">
-              <Download /> Download CV
+              Download CV <Download />
             </a>
           </motion.div>
         )}
