@@ -18,7 +18,7 @@ const THEMES = [
 ] as const;
 
 /** Set to false to hide the theme picker once a theme is chosen (DEFAULT_THEME stays). */
-const SHOW_THEME_PICKER = true;
+const SHOW_THEME_PICKER = false;
 const DEFAULT_THEME: (typeof THEMES)[number]['id'] = 'lumen';
 
 function ThemePicker({ theme, onPick }: { theme: string; onPick: (id: string) => void }) {
