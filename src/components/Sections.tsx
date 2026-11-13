@@ -21,25 +21,18 @@ export function Experience() {
   return (
     <section className="section" id="experience">
       <div className="container">
-        <SectionHead
-          eyebrow="03 / Experience"
-          title={
-            <>
-              Industry experience, <span className="accent">engineering first</span>
-            </>
-          }
-        />
+        <SectionHead eyebrow="Experience" title={<>Industry experience, engineering first</>} />
         <div className="rows">
           {experience.map((job, i) => (
             <Reveal key={job.company} delay={0.05 * i} as="article" className="row">
-              <div className="row-when label">
+              <div className="row-when">
                 {job.current && (
-                  <span className="now">
+                  <span className="now label">
                     <span className="status-dot" /> Current
                   </span>
                 )}
-                <span>{job.period}</span>
-                <span>{job.location}</span>
+                <span className="label">{job.period}</span>
+                <span className="label">{job.location}</span>
               </div>
               <div>
                 <div className="row-title">
@@ -81,24 +74,19 @@ export function Skills() {
   return (
     <section className="section" id="skills">
       <div className="container">
-        <SectionHead
-          eyebrow="04 / Toolkit"
-          title={
-            <>
-              The <span className="accent">stack</span> behind the work
-            </>
-          }
-        />
+        <SectionHead eyebrow="Toolkit" title={<>The stack behind the work</>} />
         <div className="skill-cols">
           {skillGroups.map((g, i) => (
             <Reveal key={g.title} delay={0.05 * i} className="skill-col">
               <span className="label">0{i + 1}</span>
               <h3>{g.title}</h3>
-              <ul>
+              <div className="chips">
                 {g.items.map((s) => (
-                  <li key={s}>{s}</li>
+                  <span key={s} className="chip">
+                    {s}
+                  </span>
                 ))}
-              </ul>
+              </div>
             </Reveal>
           ))}
         </div>
@@ -114,20 +102,13 @@ export function Background() {
   return (
     <section className="section" id="education">
       <div className="container">
-        <SectionHead
-          eyebrow="05 / Education"
-          title={
-            <>
-              Education and <span className="accent">continuous learning</span>
-            </>
-          }
-        />
+        <SectionHead eyebrow="Education" title={<>Education and continuous learning</>} />
         <div className="rows">
           {education.map((e, i) => (
             <Reveal key={e.school} delay={0.05 * i} as="article" className="row">
-              <div className="row-when label">
-                <span>{e.period}</span>
-                <span>{e.location}</span>
+              <div className="row-when">
+                <span className="label">{e.period}</span>
+                <span className="label">{e.location}</span>
               </div>
               <div>
                 <div className="row-title">
@@ -152,40 +133,44 @@ export function Background() {
         <Reveal>
           <h3 className="subhead">Talks</h3>
         </Reveal>
-        {talks.map((t) => (
-          <Reveal key={t.title} className="list-row">
-            <div>
-              <h4>{t.title}</h4>
-              <span className="label">{t.venue}</span>
-            </div>
-            <p>{t.summary}</p>
-            <div style={{ display: 'grid', gap: 10 }}>
-              {t.links.map((l) => (
-                <a key={l.href} className="text-link" href={asset(l.href)} target="_blank" rel="noopener">
-                  {l.label === 'Slides' ? <FileText /> : <ArrowUpRight />} {l.label}
-                </a>
-              ))}
-            </div>
-          </Reveal>
-        ))}
+        <div className="list">
+          {talks.map((t) => (
+            <Reveal key={t.title} className="list-row">
+              <div>
+                <h4>{t.title}</h4>
+                <span className="label">{t.venue}</span>
+              </div>
+              <p>{t.summary}</p>
+              <div className="acts">
+                {t.links.map((l, i) => (
+                  <a key={l.href} className={`pill small ${i === 0 ? 'dark' : ''}`} href={asset(l.href)} target="_blank" rel="noopener">
+                    {l.label} {l.label === 'Slides' ? <FileText /> : <ArrowUpRight />}
+                  </a>
+                ))}
+              </div>
+            </Reveal>
+          ))}
+        </div>
 
         <Reveal>
           <h3 className="subhead">Certifications</h3>
         </Reveal>
-        {certifications.map((c, i) => (
-          <Reveal key={c.title} delay={0.04 * i}>
-            <a className="list-row" href={c.href} target="_blank" rel="noopener">
-              <div>
-                <h4>{c.title}</h4>
-                <span className="label">{c.issuer}</span>
-              </div>
-              <p>{c.note}</p>
-              <span className="go label">
-                Certificate <ArrowUpRight />
-              </span>
-            </a>
-          </Reveal>
-        ))}
+        <div className="list">
+          {certifications.map((c, i) => (
+            <Reveal key={c.title} delay={0.04 * i}>
+              <a className="list-row" href={c.href} target="_blank" rel="noopener" aria-label={`${c.title}: view certificate`}>
+                <div>
+                  <h4>{c.title}</h4>
+                  <span className="label">{c.issuer}</span>
+                </div>
+                <p>{c.note}</p>
+                <span className="go" aria-hidden>
+                  <ArrowUpRight />
+                </span>
+              </a>
+            </Reveal>
+          ))}
+        </div>
 
         <Reveal>
           <h3 className="subhead">Endorsements</h3>
@@ -193,10 +178,10 @@ export function Background() {
         <div className="quotes">
           {endorsements.map((q, i) => (
             <Reveal key={q.name} delay={0.08 * i} as="article" className="quote">
-              <blockquote>{q.quote}</blockquote>
+              <blockquote>“{q.quote}”</blockquote>
               <strong>{q.name}</strong>
               <span className="label">
-                {q.title} · {q.org}
+                {q.title} • {q.org}
               </span>
             </Reveal>
           ))}
@@ -257,7 +242,7 @@ function Gallery({ images }: { images: string[] }) {
         </motion.div>
       </AnimatePresence>
       <div className="gallery-bar">
-        <span className="label">
+        <span className="count label">
           {String(i + 1).padStart(2, '0')} / {String(images.length).padStart(2, '0')}
         </span>
         <div>
@@ -277,17 +262,10 @@ export function Beyond() {
   return (
     <section className="section" id="beyond">
       <div className="container">
-        <SectionHead
-          eyebrow="06 / Beyond"
-          title={
-            <>
-              Maker, teammate, <span className="accent">founder</span>
-            </>
-          }
-        />
+        <SectionHead eyebrow="Beyond" title={<>Maker, teammate, founder</>} />
         <Reveal className="venture">
           <div className="venture-text">
-            <span className="label accent">Entrepreneurship</span>
+            <span className="label">Entrepreneurship</span>
             <h3>{venture.name}</h3>
             <p>{venture.text}</p>
             <ul>
@@ -316,9 +294,9 @@ export function Beyond() {
 }
 
 /* ================================================================== */
-/*  Contact + footer                                                   */
+/*  Contact (closing panel with the footer inside)                     */
 /* ================================================================== */
-export function Contact() {
+export function Contact({ onTop }: { onTop: () => void }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
@@ -330,61 +308,56 @@ export function Contact() {
     }
   };
   return (
-    <section className="section contact" id="contact">
+    <section className="contact" id="contact">
       <div className="container">
-        <Reveal>
-          <span className="label">07 / Contact</span>
+        <Reveal className="contact-panel dark-panel">
+          <span className="label">Contact</span>
           <h2>
-            Let's <span className="accent">talk</span>
+            Let's build
+            <br />
+            something <span className="accent">real.</span>
           </h2>
-        </Reveal>
-        <Reveal delay={0.1} className="contact-row">
-          <p>
-            I'm always happy to talk about computer vision, LLMs and industrial AI, and about thesis topics or AI/ML
-            engineering opportunities in Germany.
-          </p>
-          <div className="email-wrap">
-            <a className="email-link" href={`mailto:${profile.email}`}>
-              {profile.email}
+          <div className="contact-row">
+            <p>
+              I'm always happy to talk about computer vision, LLMs and industrial AI, and about thesis topics or AI/ML
+              engineering opportunities in Germany.
+            </p>
+            <div className="email-wrap">
+              <a className="email-link" href={`mailto:${profile.email}`}>
+                {profile.email}
+              </a>
+              <button className="pill small" onClick={copy} aria-live="polite">
+                {copied ? 'Copied' : 'Copy'} {copied ? <Check /> : <Copy />}
+              </button>
+            </div>
+          </div>
+          <div className="contact-links">
+            <a className="pill small" href={profile.linkedin} target="_blank" rel="noopener">
+              <LinkedinIcon /> LinkedIn
             </a>
-            <button className="copy-btn label" onClick={copy} aria-live="polite">
-              {copied ? <Check /> : <Copy />} {copied ? 'Copied' : 'Copy'}
+            <a className="pill small" href={profile.github} target="_blank" rel="noopener">
+              <GithubIcon /> GitHub
+            </a>
+            <a className="pill small" href={profile.phoneHref}>
+              {profile.phone}
+            </a>
+            <a className="pill small" href={asset(profile.cv)} target="_blank" rel="noopener">
+              CV (English) <Download />
+            </a>
+            <a className="pill small" href={asset(profile.cvDe)} target="_blank" rel="noopener">
+              Lebenslauf (Deutsch) <Download />
+            </a>
+          </div>
+          <div className="contact-foot label">
+            <span>
+              © {new Date().getFullYear()} {profile.name} • {profile.location}
+            </span>
+            <button className="pill small" onClick={onTop}>
+              Back to top <ArrowUp />
             </button>
           </div>
         </Reveal>
-        <Reveal delay={0.15} className="contact-links">
-          <a className="text-link" href={profile.linkedin} target="_blank" rel="noopener">
-            <LinkedinIcon /> LinkedIn
-          </a>
-          <a className="text-link" href={profile.github} target="_blank" rel="noopener">
-            <GithubIcon /> GitHub
-          </a>
-          <a className="text-link" href={profile.phoneHref}>
-            {profile.phone}
-          </a>
-          <a className="text-link" href={asset(profile.cv)} target="_blank" rel="noopener">
-            <Download /> CV (English)
-          </a>
-          <a className="text-link" href={asset(profile.cvDe)} target="_blank" rel="noopener">
-            <Download /> Lebenslauf (Deutsch)
-          </a>
-        </Reveal>
       </div>
     </section>
-  );
-}
-
-export function Footer({ onTop }: { onTop: () => void }) {
-  return (
-    <footer className="site-footer">
-      <div className="container footer-inner label">
-        <span>
-          © {new Date().getFullYear()} {profile.name} · {profile.location}
-        </span>
-        <button className="to-top label" onClick={onTop}>
-          Back to top <ArrowUp />
-        </button>
-      </div>
-    </footer>
   );
 }

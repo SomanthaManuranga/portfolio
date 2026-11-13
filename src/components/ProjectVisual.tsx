@@ -165,6 +165,156 @@ function Airfoil() {
   );
 }
 
+function Document() {
+  // A scanned form: text lines, with question / answer fields picked out
+  const lines = [28, 40, 52, 76, 88, 112];
+  return (
+    <svg viewBox="0 0 320 140" className="pv">
+      <rect x="92" y="12" width="136" height="118" rx="4" className="pv-fill-soft" />
+      {lines.map((y, i) => (
+        <line key={y} x1="104" y1={y} x2={i % 2 ? 190 : 214} y2={y} className="pv-line" />
+      ))}
+      <g className="pv-box" style={{ animationDelay: '0s' }}>
+        <rect x="102" y="58" width="50" height="12" rx="2" />
+        <rect x="102" y="45" width="46" height="11" rx="2" className="pv-tag" />
+        <text x="105" y="54" className="pv-tagtext">question</text>
+      </g>
+      <g className="pv-box" style={{ animationDelay: '0.7s' }}>
+        <rect x="158" y="58" width="58" height="12" rx="2" />
+        <rect x="158" y="45" width="37" height="11" rx="2" className="pv-tag" />
+        <text x="161" y="54" className="pv-tagtext">answer</text>
+      </g>
+      <g className="pv-box" style={{ animationDelay: '1.4s' }}>
+        <rect x="102" y="96" width="112" height="12" rx="2" />
+      </g>
+      <text x="16" y="130" className="pv-label">F1 0.896</text>
+      <text x="246" y="130" className="pv-label">key → value</text>
+    </svg>
+  );
+}
+
+function Segmentation() {
+  // Condition-state mask over a steel surface
+  return (
+    <svg viewBox="0 0 320 140" className="pv">
+      <rect x="20" y="16" width="280" height="100" rx="6" className="pv-fill-soft" />
+      {[36, 56, 76, 96].map((y) => (
+        <line key={y} x1="20" y1={y} x2="300" y2={y} className="pv-line" style={{ opacity: 0.4 }} />
+      ))}
+      <path d="M58 30 C 96 20, 132 34, 126 62 C 120 92, 74 100, 54 78 C 40 62, 40 38, 58 30 Z" className="pv-fill-accent pv-fade" style={{ opacity: 0.35 }} />
+      <path d="M170 44 C 204 30, 250 40, 262 68 C 272 94, 222 108, 190 96 C 162 86, 150 56, 170 44 Z" className="pv-fill-accent" style={{ opacity: 0.22 }} />
+      <path d="M206 58 C 222 52, 240 60, 240 74 C 240 88, 216 92, 204 82 C 196 74, 196 62, 206 58 Z" className="pv-accent-line" />
+      <text x="20" y="132" className="pv-label">fair · poor · severe</text>
+      <text x="238" y="132" className="pv-label">mIoU 0.523</text>
+    </svg>
+  );
+}
+
+function Maze() {
+  // Occupancy grid with a planned route drawn through it
+  const walls = ['M40 20 H280 V120 H40 Z', 'M40 54 H120', 'M160 20 V70', 'M120 86 H220', 'M220 54 V120', 'M80 86 V120', 'M200 54 H250'];
+  return (
+    <svg viewBox="0 0 320 140" className="pv">
+      {walls.map((d) => (
+        <path key={d} d={d} className="pv-line" />
+      ))}
+      <path d="M58 104 V70 H140 V38 H190 V70 H236 V38 H262" className="pv-accent-line pv-draw" pathLength={600} />
+      <circle cx="58" cy="104" r="5" className="pv-node" />
+      <circle cx="262" cy="38" r="5" className="pv-fill-accent" />
+      <text x="40" y="134" className="pv-label">A* route on the occupancy grid</text>
+    </svg>
+  );
+}
+
+function Bars() {
+  const hs = [34, 52, 44, 70, 58, 88, 64, 76, 96];
+  return (
+    <svg viewBox="0 0 320 140" className="pv">
+      <line x1="34" y1="114" x2="290" y2="114" className="pv-line" />
+      {hs.map((h, i) => (
+        <rect key={i} x={44 + i * 27} y={114 - h} width="16" height={h} rx="2" className={`pv-bar ${i === hs.length - 1 ? 'hi' : ''}`} style={{ animationDelay: `${i * 0.08}s` }} />
+      ))}
+      <text x="34" y="132" className="pv-label">model comparison</text>
+    </svg>
+  );
+}
+
+function Scatter() {
+  // Falling trend with a fitted line
+  const pts = Array.from({ length: 34 }, (_, i) => {
+    const x = 40 + ((i * 53) % 240);
+    const y = 28 + (x - 40) * 0.3 + (((i * 37) % 30) - 15);
+    return [x, y];
+  });
+  return (
+    <svg viewBox="0 0 320 140" className="pv">
+      <path d="M34 16 V116 H292" className="pv-line" />
+      {pts.map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r="2.6" fill="rgba(255,255,255,0.45)" />
+      ))}
+      <path d="M40 28 L282 102" className="pv-accent-line pv-draw" pathLength={600} />
+      <text x="34" y="132" className="pv-label">usage ↑ sleep ↓ · r = −0.79</text>
+    </svg>
+  );
+}
+
+function Signal() {
+  // Noisy sensor readings and the filtered result
+  const noisy = Array.from({ length: 49 }, (_, i) => {
+    const x = 28 + i * 5.5;
+    const y = 70 + Math.sin(i * 0.22) * 6 + (((i * 29) % 23) - 11) * (i === 30 ? 3 : 1);
+    return `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`;
+  }).join(' ');
+  const clean = Array.from({ length: 49 }, (_, i) => `${i ? 'L' : 'M'}${(28 + i * 5.5).toFixed(1)} ${(70 + Math.sin(i * 0.22) * 6).toFixed(1)}`).join(' ');
+  return (
+    <svg viewBox="0 0 320 140" className="pv">
+      <line x1="28" y1="70" x2="292" y2="70" className="pv-line" style={{ opacity: 0.35 }} />
+      <path d={noisy} className="pv-line" />
+      <path d={clean} className="pv-accent-line pv-draw" pathLength={600} />
+      <text x="28" y="130" className="pv-label">raw readings → filtered</text>
+    </svg>
+  );
+}
+
+function Printer() {
+  // CoreXY gantry seen from above, with printed layers
+  return (
+    <svg viewBox="0 0 320 140" className="pv">
+      <rect x="70" y="16" width="180" height="104" rx="6" className="pv-fill-soft" />
+      <path d="M70 16 L250 120 M250 16 L70 120" className="pv-line" style={{ opacity: 0.45 }} />
+      {[84, 92, 100].map((y, i) => (
+        <path key={y} d={`M118 ${y} H202`} className="pv-accent-line pv-draw" pathLength={600} style={{ animationDelay: `${i * 0.5}s` }} />
+      ))}
+      <line x1="70" y1="58" x2="250" y2="58" className="pv-line" />
+      <rect x="150" y="48" width="20" height="20" rx="3" className="pv-gate" />
+      <circle cx="70" cy="16" r="5" className="pv-node" />
+      <circle cx="250" cy="16" r="5" className="pv-node" />
+      <text x="70" y="134" className="pv-label">CoreXY kinematics</text>
+    </svg>
+  );
+}
+
+function Dashboard() {
+  const hs = [18, 30, 24, 38, 46];
+  return (
+    <svg viewBox="0 0 320 140" className="pv">
+      {[0, 1, 2].map((i) => (
+        <g key={i}>
+          <rect x={24 + i * 94} y="16" width="84" height="38" rx="5" className="pv-fill-soft" />
+          <line x1={34 + i * 94} y1="30" x2={66 + i * 94} y2="30" className="pv-line" />
+          <rect x={34 + i * 94} y="38" width={30 + i * 10} height="6" rx="3" className="pv-fill-accent" />
+        </g>
+      ))}
+      <rect x="24" y="62" width="130" height="62" rx="5" className="pv-fill-soft" />
+      {hs.map((h, i) => (
+        <rect key={i} x={38 + i * 22} y={116 - h} width="12" height={h} rx="2" className={`pv-bar ${i === 4 ? 'hi' : ''}`} style={{ animationDelay: `${i * 0.1}s` }} />
+      ))}
+      <rect x="162" y="62" width="134" height="62" rx="5" className="pv-fill-soft" />
+      <path d="M174 108 L198 94 L222 100 L246 80 L284 72" className="pv-accent-line pv-draw" pathLength={600} />
+    </svg>
+  );
+}
+
 function Network() {
   const layers = [3, 5, 5, 2];
   const nodes = layers.flatMap((n, l) =>
@@ -190,12 +340,23 @@ const map: Record<string, () => JSX.Element> = {
   'xray-casting-defects': Detection,
   'quantum-circuit-dataset': Circuit,
   'cnn-drag-prediction': Airfoil,
+  'layoutlmv3-funsd': Document,
+  'corrosion-segmentation': Segmentation,
+  'rosbot-maze': Maze,
+  'alia-digital-twin': Maze,
+  'ml-challenge': Bars,
+  'study-program-intelligence': Bars,
+  'social-media-eda': Scatter,
+  'ir-thermometer': Signal,
+  'corexy-printer': Printer,
+  'production-analytics-dashboard': Dashboard,
 };
 
-export default function ProjectVisual({ slug }: { slug: string }) {
+/** The illustration always sits on the dark panel colour, whatever the page theme. */
+export default function ProjectVisual({ slug, className = '' }: { slug: string; className?: string }) {
   const V = map[slug] ?? Network;
   return (
-    <div className="pv-wrap" aria-hidden>
+    <div className={`pv-wrap dark-panel ${className}`} aria-hidden>
       <V />
     </div>
   );

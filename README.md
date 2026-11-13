@@ -6,12 +6,17 @@ Personal portfolio: an interactive 3D site built with **React, Three.js (react-t
 
 ## Highlights
 
-- One calm 3D scene for the whole page: a dark machined gimbal lit by a light that follows the cursor; scrolling turns the rings and moves the object
-- Restrained art direction: near-black background, off-white type, a single accent colour, wide uppercase headings and hairlines
-- 15 projects: a numbered featured list with hover previews, a filterable table, and a slide-in detail panel with shareable links (`#project/<slug>`)
+- Light, airy layout with rounded panels and pill buttons; one accent colour
+- A 3D scene in the hero panel: a dark machined gimbal lit by a light that follows the cursor
+- 15 projects as visual cards, each with its own small illustration and headline result; opening one shows a full-screen case study with shareable links (`#project/<slug>`)
 - Experience, toolkit, education, talks, certifications, endorsements and a photo gallery
 - Responsive from 320 px phones to wide desktops; respects `prefers-reduced-motion`; falls back gracefully without WebGL
-- Three.js is lazy-loaded after first paint and renders on demand, so text is interactive immediately
+- Three.js is lazy-loaded after first paint and renders only while the hero is on screen
+
+## Colour theme
+
+Four themes are defined at the top of `src/styles/global.css` (`lumen`, `paper`, `steel`, `graphite`).
+In `src/App.tsx`, `DEFAULT_THEME` sets the one visitors get and `SHOW_THEME_PICKER` shows or hides the picker bar.
 
 ## Editing content
 

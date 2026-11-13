@@ -10,12 +10,44 @@ import { GithubIcon, Reveal, SectionHead } from './ui';
 const linkIcon = (kind: Link['kind']) =>
   kind === 'code' ? <GithubIcon /> : kind === 'demo' ? <PlayCircle /> : kind === 'paper' ? <BookOpen /> : <FileText />;
 
-/* ---------------- Detail panel ---------------- */
-function ProjectModal({ p, onClose, onStep }: { p: Project; onClose: () => void; onStep: (dir: 1 | -1) => void }) {
+/** How many cards get the wide (half-width) size so every row of the grid is full. */
+function wideCount(n: number) {
+  for (const w of [2, 4, 6]) if (w <= n && (n - w) % 3 === 0) return w;
+  return 0;
+}
+
+/* ---------------- Card ---------------- */
+function WorkCard({ p, onOpen }: { p: Project; onOpen: (p: Project) => void }) {
+  const m = p.metrics[0];
+  return (
+    <button className="wcard" onClick={() => onOpen(p)} aria-haspopup="dialog">
+      <ProjectVisual slug={p.slug} />
+      <div className="wcard-body">
+        <div className="wcard-tags label">
+          <span>{p.category}</span>
+          <span>{p.year}</span>
+        </div>
+        <h3>{p.title}</h3>
+        <p>{p.summary}</p>
+        <div className="wcard-foot">
+          <div>
+            <strong>{m.value}</strong>
+            <small>{m.label}</small>
+          </div>
+          <span className="go" aria-hidden>
+            <ArrowUpRight />
+          </span>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+/* ---------------- Full-screen case study ---------------- */
+function CaseStudy({ p, onClose, onStep }: { p: Project; onClose: () => void; onStep: (dir: 1 | -1) => void }) {
   const boxRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const index = projects.findIndex((x) => x.slug === p.slug);
-  const prev = projects[(index - 1 + projects.length) % projects.length];
   const next = projects[(index + 1) % projects.length];
 
   // Lock the page, remember focus, restore both on close
@@ -53,113 +85,130 @@ function ProjectModal({ p, onClose, onStep }: { p: Project; onClose: () => void;
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose, onStep]);
 
-  // New project: back to the top of the panel
+  // New project: back to the top
   useEffect(() => {
     boxRef.current?.scrollTo({ top: 0 });
   }, [p.slug]);
 
   return (
-    <motion.div
-      className="modal-backdrop"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
-      onClick={onClose}
-      data-lenis-prevent
-    >
+    <>
+      <motion.div
+        className="case-backdrop"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.35 }}
+        onClick={onClose}
+      />
       <motion.div
         ref={boxRef}
-        className="modal"
+        className="case"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="modal-title"
-        initial={{ x: '100%' }}
-        animate={{ x: 0 }}
-        exit={{ x: '100%' }}
+        aria-labelledby="case-title"
+        data-lenis-prevent
+        initial={{ opacity: 0, y: 60 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 40 }}
         transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-        onClick={(e) => e.stopPropagation()}
       >
-        <div className="modal-bar">
-          <span className="label">
-            Project {String(index + 1).padStart(2, '0')} / {projects.length}
-          </span>
-          <button ref={closeRef} className="modal-close" onClick={onClose} aria-label="Close project details">
+        <div className="case-bar">
+          <button ref={closeRef} className="pill dark" onClick={onClose}>
             Close <X />
           </button>
+          <div className="steps">
+            <span className="label" style={{ marginRight: 8 }}>
+              {String(index + 1).padStart(2, '0')} / {projects.length}
+            </span>
+            <button className="round-btn" onClick={() => onStep(-1)} aria-label="Previous project">
+              <ArrowLeft />
+            </button>
+            <button className="round-btn" onClick={() => onStep(1)} aria-label="Next project">
+              <ArrowRight />
+            </button>
+          </div>
         </div>
 
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={p.slug}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            className="case-inner"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
           >
-            <ProjectVisual slug={p.slug} />
-            <div className="modal-body">
-              <span className="label accent">{p.category}</span>
-              <h2 id="modal-title">{p.title}</h2>
-              <p className="label">
-                {p.context} · {p.year}
-              </p>
-              <p className="modal-summary">{p.summary}</p>
-              <div className="metrics">
-                {p.metrics.map((m) => (
-                  <div key={m.label} className="metric">
-                    <strong>{m.value}</strong>
-                    <span>{m.label}</span>
-                  </div>
-                ))}
+            <div className="case-head">
+              <div>
+                <span className="label">
+                  {p.category} • {p.context} • {p.year}
+                </span>
+                <h2 id="case-title">{p.title}</h2>
               </div>
-              <h3>Highlights</h3>
-              <ul className="highlights">
-                {p.highlights.map((h) => (
-                  <li key={h}>{h}</li>
-                ))}
-              </ul>
-              <h3>Stack</h3>
-              <div className="chips">
-                {p.tech.map((t) => (
-                  <span key={t} className="chip">
-                    {t}
-                  </span>
-                ))}
-              </div>
-              {p.links.length > 0 ? (
-                <div className="modal-links">
-                  {p.links.map((l) => (
-                    <a key={l.href} className="text-link" href={l.href} target="_blank" rel="noopener">
-                      {linkIcon(l.kind)} {l.label}
-                    </a>
-                  ))}
-                </div>
-              ) : (
-                <p className="modal-note">No public repository for this project.</p>
-              )}
+              <p>{p.summary}</p>
             </div>
+
+            <ProjectVisual slug={p.slug} className="case-hero" />
+
+            <div className="case-metrics">
+              {p.metrics.map((m) => (
+                <div key={m.label} className="case-metric">
+                  <strong>{m.value}</strong>
+                  <span>{m.label}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="case-cols">
+              <div className="case-block">
+                <h3>What I did and found</h3>
+                <ol className="highlights">
+                  {p.highlights.map((h) => (
+                    <li key={h}>{h}</li>
+                  ))}
+                </ol>
+              </div>
+              <div className="case-side">
+                <div className="case-block">
+                  <h3>Stack</h3>
+                  <div className="chips">
+                    {p.tech.map((t) => (
+                      <span key={t} className="chip">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="case-block">
+                  <h3>Links</h3>
+                  {p.links.length > 0 ? (
+                    <div className="case-links">
+                      {p.links.map((l, i) => (
+                        <a key={l.href} className={`pill small ${i === 0 ? 'dark' : ''}`} href={l.href} target="_blank" rel="noopener">
+                          {linkIcon(l.kind)} {l.label}
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="case-note">No public repository for this project.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <button className="case-next dark-panel" onClick={() => onStep(1)}>
+              <span>
+                <span className="label">Next project</span>
+                <h3>{next.title}</h3>
+              </span>
+              <span className="go" aria-hidden>
+                <ArrowRight />
+              </span>
+            </button>
           </motion.div>
         </AnimatePresence>
-
-        <div className="modal-nav">
-          <button onClick={() => onStep(-1)} aria-label={`Previous project: ${prev.title}`}>
-            <ArrowLeft />
-            <span>
-              <small className="label">Previous</small>
-              {prev.title}
-            </span>
-          </button>
-          <button onClick={() => onStep(1)} aria-label={`Next project: ${next.title}`}>
-            <span>
-              <small className="label">Next</small>
-              {next.title}
-            </span>
-            <ArrowRight />
-          </button>
-        </div>
       </motion.div>
-    </motion.div>
+    </>
   );
 }
 
@@ -169,11 +218,9 @@ type Filter = 'All' | Category;
 export default function Projects() {
   const [open, setOpen] = useState<Project | null>(null);
   const [filter, setFilter] = useState<Filter>('All');
-  const [hover, setHover] = useState<Project | null>(null);
-  const preview = useRef<HTMLDivElement>(null);
 
-  const featured = projects.filter((p) => p.featured);
   const filtered = useMemo(() => (filter === 'All' ? projects : projects.filter((p) => p.category === filter)), [filter]);
+  const wide = wideCount(filtered.length);
   const counts = useMemo(() => {
     const c: Record<string, number> = { All: projects.length };
     projects.forEach((p) => (c[p.category] = (c[p.category] ?? 0) + 1));
@@ -181,7 +228,6 @@ export default function Projects() {
   }, []);
 
   const openProject = useCallback((p: Project) => {
-    setHover(null);
     setOpen(p);
     history.replaceState(null, '', `#project/${p.slug}`);
   }, []);
@@ -214,103 +260,46 @@ export default function Projects() {
     return () => window.removeEventListener('hashchange', fromHash);
   }, []);
 
-  // The preview card trails the cursor over the featured list (mouse only)
-  const onListMove = (e: React.PointerEvent) => {
-    if (e.pointerType !== 'mouse' || !preview.current) return;
-    const w = 300;
-    const x = Math.min(e.clientX + 30, window.innerWidth - w - 16);
-    const y = Math.min(e.clientY + 26, window.innerHeight - 160);
-    preview.current.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-  };
-
   return (
     <section className="section" id="projects">
       <div className="container">
         <SectionHead
-          eyebrow="02 / Work"
-          title={
-            <>
-              Projects with <span className="accent">measured results</span>
-            </>
-          }
-          sub="Every number comes from a held-out evaluation in the project's public repository. Select a project for details."
+          eyebrow="Work"
+          title={<>Projects with measured results</>}
+          sub="Each card shows what the project is and its headline result, taken from a held-out evaluation in the public repository. Open one for the full story."
         />
 
-        <Reveal>
-          <ol className="work-list" onPointerMove={onListMove} onPointerLeave={() => setHover(null)}>
-            {featured.map((p, i) => (
-              <li key={p.slug}>
-                <button
-                  className="work-row"
-                  onClick={() => openProject(p)}
-                  onPointerEnter={(e) => e.pointerType === 'mouse' && setHover(p)}
-                  aria-haspopup="dialog"
-                >
-                  <span className="label">{String(i + 1).padStart(2, '0')}</span>
-                  <h3>{p.title}</h3>
-                  <span className="cat label">
-                    {p.category}
-                    <br />
-                    {p.year}
-                  </span>
-                  <span className="wm">
-                    <strong>{p.metrics[0].value}</strong>
-                    <span className="label">{p.metrics[0].label}</span>
-                  </span>
-                  <ArrowUpRight className="arrow" aria-hidden />
-                </button>
-              </li>
-            ))}
-          </ol>
+        <Reveal className="filters" >
+          {(['All', ...categories] as Filter[]).map((c) => (
+            <button key={c} aria-pressed={filter === c} className={`filter ${filter === c ? 'active' : ''}`} onClick={() => setFilter(c)}>
+              {c}
+              <span className="count">{counts[c] ?? 0}</span>
+            </button>
+          ))}
         </Reveal>
 
-        <div className="all-projects">
-          <Reveal className="all-head">
-            <h3>All projects</h3>
-            <div className="filters" role="tablist" aria-label="Filter projects by category">
-              {(['All', ...categories] as Filter[]).map((c) => (
-                <button key={c} role="tab" aria-selected={filter === c} className={`filter ${filter === c ? 'active' : ''}`} onClick={() => setFilter(c)}>
-                  {c}
-                  <span className="count">{counts[c] ?? 0}</span>
-                </button>
-              ))}
-            </div>
-          </Reveal>
-
-          <ul className="ptable">
-            <AnimatePresence mode="popLayout" initial={false}>
-              {filtered.map((p) => (
-                <motion.li
-                  key={p.slug}
-                  layout
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <button className="prow" onClick={() => openProject(p)} aria-haspopup="dialog">
-                    <span className="y label">{p.year}</span>
-                    <h4>{p.title}</h4>
-                    <span className="c label">{p.category}</span>
-                    <span className="m">
-                      <b>{p.metrics[0].value}</b> · {p.metrics[0].label}
-                    </span>
-                    <ArrowUpRight aria-hidden />
-                  </button>
-                </motion.li>
-              ))}
-            </AnimatePresence>
-          </ul>
-        </div>
+        <ul className="work-grid">
+          <AnimatePresence mode="popLayout" initial={false}>
+            {filtered.map((p, i) => (
+              <motion.li
+                key={p.slug}
+                className={i < wide ? 'wide' : ''}
+                layout
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '0px 0px -8% 0px' }}
+                exit={{ opacity: 0, scale: 0.97 }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <WorkCard p={p} onOpen={openProject} />
+              </motion.li>
+            ))}
+          </AnimatePresence>
+        </ul>
       </div>
 
       {createPortal(
-        <>
-          <div ref={preview} className={`work-preview ${hover && !open ? 'on' : ''}`} aria-hidden>
-            {hover && <ProjectVisual slug={hover.slug} />}
-          </div>
-          <AnimatePresence>{open && <ProjectModal key="project-modal" p={open} onClose={close} onStep={step} />}</AnimatePresence>
-        </>,
+        <AnimatePresence>{open && <CaseStudy key="case" p={open} onClose={close} onStep={step} />}</AnimatePresence>,
         document.body,
       )}
     </section>

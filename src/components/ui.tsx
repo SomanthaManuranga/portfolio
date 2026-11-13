@@ -39,11 +39,11 @@ export function Reveal({
 export function SectionHead({ eyebrow, title, sub }: { eyebrow: string; title: ReactNode; sub?: string }) {
   return (
     <Reveal className="section-head">
-      <span className="label">{eyebrow}</span>
       <div>
+        <span className="label">{eyebrow}</span>
         <h2>{title}</h2>
-        {sub && <p>{sub}</p>}
       </div>
+      {sub && <p>{sub}</p>}
     </Reveal>
   );
 }

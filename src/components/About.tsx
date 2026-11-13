@@ -1,3 +1,4 @@
+import { Download } from 'lucide-react';
 import { principles, profile, stats } from '../data/content';
 import { asset, CountUp, Reveal, SectionHead } from './ui';
 
@@ -5,10 +6,6 @@ function Portrait() {
   return (
     <figure className="portrait">
       <img src={asset(profile.portrait)} alt={`Portrait of ${profile.name}`} width={1024} height={1024} loading="lazy" />
-      <span className="corner tl" aria-hidden />
-      <span className="corner tr" aria-hidden />
-      <span className="corner bl" aria-hidden />
-      <span className="corner br" aria-hidden />
       <figcaption className="label">
         <b>{profile.name}</b>
         <span>{profile.location}</span>
@@ -21,7 +18,7 @@ export default function About() {
   return (
     <section className="section" id="about">
       <div className="container">
-        <SectionHead eyebrow="01 / About" title={<>From mechanical systems to <span className="accent">intelligent ones</span></>} />
+        <SectionHead eyebrow="About" title={<>From mechanical systems to intelligent ones</>} />
         <div className="about-grid">
           <div>
             <Reveal>
@@ -31,6 +28,11 @@ export default function About() {
             </Reveal>
             <Reveal delay={0.08}>
               <p className="about-body">{profile.summary}</p>
+            </Reveal>
+            <Reveal delay={0.12} className="about-cta">
+              <a className="pill dark" href={asset(profile.cv)} target="_blank" rel="noopener">
+                Download CV <Download />
+              </a>
             </Reveal>
             <div className="stats">
               {stats.map((s, i) => (

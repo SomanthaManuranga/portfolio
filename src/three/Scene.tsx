@@ -5,13 +5,12 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { sceneState } from '../lib/scroll';
 
 /**
- * One calm scene for the whole page: a dark machined gimbal (three rings around a
- * faceted core) lit by a single light that follows the pointer. Scrolling turns the
- * rings and moves the object from the hero to the edge of the page and back to the
- * centre for the contact section.
+ * The hero panel's 3D scene: a dark machined gimbal (three rings around a faceted
+ * core) lit by one light that follows the pointer. Scrolling turns the rings.
+ * It only renders while the hero is on screen.
  */
 
-const input = { mx: 0.35, my: -0.2, hasPointer: false, hero: 0, page: 0 };
+const input = { mx: 0.4, my: 0.3, hasPointer: false, hero: 0 };
 
 function useInputListeners() {
   useEffect(() => {
@@ -22,18 +21,14 @@ function useInputListeners() {
       input.my = -((e.clientY / window.innerHeight) * 2 - 1);
     };
     const onScroll = () => {
-      const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-      input.page = window.scrollY / max;
-      input.hero = Math.min(1, window.scrollY / window.innerHeight);
+      input.hero = Math.min(1.4, window.scrollY / window.innerHeight);
     };
     onScroll();
     window.addEventListener('pointermove', onMove, { passive: true });
     window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll, { passive: true });
     return () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
     };
   }, []);
 }
@@ -60,17 +55,14 @@ function Gimbal({ segments }: { segments: number }) {
   const nodes = useRef<THREE.InstancedMesh>(null!);
 
   const metal = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: '#2b2f35', metalness: 0.9, roughness: 0.28, envMapIntensity: 0.95 }),
+    () => new THREE.MeshStandardMaterial({ color: '#3a3f47', metalness: 0.92, roughness: 0.26, envMapIntensity: 1.1 }),
     [],
   );
   const coreMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: '#1b1e22', metalness: 0.8, roughness: 0.2, envMapIntensity: 1.0, flatShading: true }),
+    () => new THREE.MeshStandardMaterial({ color: '#22262c', metalness: 0.85, roughness: 0.18, envMapIntensity: 1.2, flatShading: true }),
     [],
   );
-  const nodeMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: '#2a2d33', metalness: 0.8, roughness: 0.4, emissive: '#7fd6cb', emissiveIntensity: 0.0 }),
-    [],
-  );
+  const nodeMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#4a505a', metalness: 0.8, roughness: 0.4 }), []);
 
   const ringDefs = useMemo(
     () => [
@@ -89,9 +81,8 @@ function Gimbal({ segments }: { segments: number }) {
     const s = new THREE.Vector3();
     for (let i = 0; i < NODE_COUNT; i++) {
       const a = (i / NODE_COUNT) * Math.PI * 2;
-      const long = i % 5 === 0;
       q.setFromEuler(new THREE.Euler(0, 0, a));
-      s.set(long ? 0.18 : 0.08, 0.024, 0.024);
+      s.set(i % 5 === 0 ? 0.18 : 0.08, 0.024, 0.024);
       m.compose(new THREE.Vector3(Math.cos(a) * 2.95, Math.sin(a) * 2.95, 0), q, s);
       nodes.current.setMatrixAt(i, m);
     }
@@ -100,7 +91,7 @@ function Gimbal({ segments }: { segments: number }) {
 
   useFrame((state, dt) => {
     const t = state.clock.elapsedTime;
-    const scrollTurn = input.page * Math.PI * 2.2;
+    const scrollTurn = input.hero * Math.PI * 1.1;
     ringDefs.forEach((d, i) => {
       const ring = rings.current[i];
       if (!ring) return;
@@ -135,21 +126,20 @@ function Dust({ count }: { count: number }) {
   const geometry = useMemo(() => {
     const pos = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 22;
-      pos[i * 3 + 1] = (Math.random() - 0.5) * 12;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 12 - 2;
+      pos[i * 3] = (Math.random() - 0.5) * 24;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 10;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 10 - 2;
     }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     return g;
   }, [count]);
   useFrame((_, dt) => {
-    ref.current.rotation.y += dt * 0.006;
-    ref.current.position.y = input.page * 1.5;
+    ref.current.rotation.y += dt * 0.008;
   });
   return (
     <points ref={ref} geometry={geometry}>
-      <pointsMaterial color="#cfd3d6" size={0.022} sizeAttenuation transparent opacity={0.45} depthWrite={false} />
+      <pointsMaterial color="#dfe3ea" size={0.024} sizeAttenuation transparent opacity={0.4} depthWrite={false} />
     </points>
   );
 }
@@ -159,54 +149,55 @@ function PointerLight() {
   const light = useRef<THREE.PointLight>(null!);
   useFrame((state, dt) => {
     const t = state.clock.elapsedTime;
-    const tx = input.hasPointer ? input.mx * 5.2 : Math.cos(t * 0.35) * 3.2;
-    const ty = input.hasPointer ? input.my * 3.0 : Math.sin(t * 0.5) * 1.8;
+    const tx = input.hasPointer ? input.mx * 6 : Math.cos(t * 0.35) * 3.4;
+    const ty = input.hasPointer ? input.my * 3.2 : Math.sin(t * 0.5) * 1.8;
     light.current.position.x = THREE.MathUtils.damp(light.current.position.x, tx, 3, dt);
     light.current.position.y = THREE.MathUtils.damp(light.current.position.y, ty, 3, dt);
   });
-  return <pointLight ref={light} position={[2, 1, 3.4]} color="#fff3e2" intensity={85} distance={16} decay={2} />;
+  return <pointLight ref={light} position={[2, 1, 3.4]} color="#fff6ea" intensity={95} distance={16} decay={2} />;
 }
 
-function Rig({ mobile, children }: { mobile: boolean; children: ReactNode }) {
+function Rig({ mobile, accent, children }: { mobile: boolean; accent: string; children: ReactNode }) {
   const group = useRef<THREE.Group>(null!);
-  const { camera } = useThree();
+  const rim = useRef<THREE.DirectionalLight>(null!);
+  const { camera, size } = useThree();
+
+  useEffect(() => {
+    rim.current.color.set(accent);
+  }, [accent]);
 
   useFrame((_, dt) => {
-    const h = input.hero;
-    // 0 in the hero, 1 through the middle of the page, back towards 0 at the very end (contact)
-    const end = THREE.MathUtils.smoothstep(input.page, 0.9, 1);
-    const away = h * (1 - end);
-
-    const x = mobile ? THREE.MathUtils.lerp(0, 1.5, away) : THREE.MathUtils.lerp(3.05, 4.9, away);
-    const y = mobile ? THREE.MathUtils.lerp(1.85, 2.5, away) : THREE.MathUtils.lerp(0.55, 0.6, away) - end * 0.5;
-    const s = (mobile ? 0.62 : 1) * THREE.MathUtils.lerp(1, 0.86, away);
+    // Fit the whole gimbal into the panel whatever its shape
+    const aspect = size.width / size.height;
+    const fit = Math.min(1, aspect / 1.15) * (mobile ? 0.92 : 0.88);
     const g = group.current;
-    g.position.x = THREE.MathUtils.damp(g.position.x, x * (1 - end * (mobile ? 1 : 0.55)), 2.2, dt);
-    g.position.y = THREE.MathUtils.damp(g.position.y, y, 2.2, dt);
-    g.scale.setScalar(THREE.MathUtils.damp(g.scale.x, s, 2.2, dt));
-    g.rotation.y = THREE.MathUtils.damp(g.rotation.y, input.mx * 0.18, 2.5, dt);
-    g.rotation.x = THREE.MathUtils.damp(g.rotation.x, -input.my * 0.12, 2.5, dt);
-
-    camera.position.x = THREE.MathUtils.damp(camera.position.x, input.mx * 0.25, 2, dt);
-    camera.position.y = THREE.MathUtils.damp(camera.position.y, input.my * 0.15, 2, dt);
+    g.scale.setScalar(THREE.MathUtils.damp(g.scale.x, fit * (1 + input.hero * 0.12), 3, dt));
+    g.position.x = mobile ? 0 : THREE.MathUtils.damp(g.position.x, 0.6 + input.mx * 0.25, 2.5, dt);
+    g.rotation.y = THREE.MathUtils.damp(g.rotation.y, input.mx * 0.22, 2.5, dt);
+    g.rotation.x = THREE.MathUtils.damp(g.rotation.x, -input.my * 0.14, 2.5, dt);
+    camera.position.x = THREE.MathUtils.damp(camera.position.x, input.mx * 0.3, 2, dt);
+    camera.position.y = THREE.MathUtils.damp(camera.position.y, input.my * 0.18, 2, dt);
     camera.lookAt(0, 0, 0);
   });
 
-  return <group ref={group}>{children}</group>;
+  return (
+    <>
+      <directionalLight ref={rim} position={[-6, 3, -4]} intensity={2.2} />
+      <group ref={group}>{children}</group>
+    </>
+  );
 }
 
-/** Full rate in the hero, half rate further down, nothing while hidden or covered. */
+/** Render only while the hero is on screen and nothing covers the page. */
 function Ticker() {
   const invalidate = useThree((s) => s.invalidate);
   useEffect(() => {
     let raf = 0;
-    let n = 0;
     const loop = () => {
       raf = requestAnimationFrame(loop);
       if (document.hidden || sceneState.paused) return;
-      n++;
-      const pastHero = window.scrollY > window.innerHeight * 0.9;
-      if (!pastHero || n % 2 === 0) invalidate();
+      if (window.scrollY > window.innerHeight * 1.15) return;
+      invalidate();
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
@@ -214,7 +205,7 @@ function Ticker() {
   return null;
 }
 
-export default function Scene({ reducedMotion }: { reducedMotion: boolean }) {
+export default function Scene({ reducedMotion, accent }: { reducedMotion: boolean; accent: string }) {
   useInputListeners();
   const mobile = typeof window !== 'undefined' && window.innerWidth < 820;
   const lowPower = mobile || (navigator.hardwareConcurrency ?? 8) <= 4;
@@ -230,13 +221,12 @@ export default function Scene({ reducedMotion }: { reducedMotion: boolean }) {
     >
       {!reducedMotion && <Ticker />}
       <Environment />
-      <ambientLight intensity={0.22} />
-      <directionalLight position={[-6, 3, -4]} color="#7fd6cb" intensity={1.6} />
+      <ambientLight intensity={0.3} />
       <PointerLight />
-      <Rig mobile={mobile}>
+      <Rig mobile={mobile} accent={accent}>
         <Gimbal segments={lowPower ? 120 : 220} />
       </Rig>
-      <Dust count={lowPower ? 220 : 520} />
+      <Dust count={lowPower ? 200 : 460} />
     </Canvas>
   );
 }

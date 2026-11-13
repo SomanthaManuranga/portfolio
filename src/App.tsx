@@ -1,83 +1,51 @@
-import { AnimatePresence, motion, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
+import { AnimatePresence, useReducedMotion } from 'framer-motion';
 import Lenis from 'lenis';
-import { Component, lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import About from './components/About';
 import Hero from './components/Hero';
 import Intro from './components/Intro';
 import Nav from './components/Nav';
 import Projects from './components/Projects';
-import { Beyond, Contact, Background, Experience, Footer, Skills } from './components/Sections';
-import { nav, profile } from './data/content';
+import { Background, Beyond, Contact, Experience, Skills } from './components/Sections';
 import { scroll, scrollToId } from './lib/scroll';
 
-const Scene = lazy(() => import('./three/Scene'));
+/** Colour themes. The first one is the default. */
+const THEMES = [
+  { id: 'lumen', name: 'Lumen blue', swatch: '#1f3bff', bg: '#f0f1f8' },
+  { id: 'paper', name: 'Paper teal', swatch: '#0f766e', bg: '#f3f0ea' },
+  { id: 'steel', name: 'Steel orange', swatch: '#d9480f', bg: '#e9edf1' },
+  { id: 'graphite', name: 'Graphite mint', swatch: '#7fd6cb', bg: '#20252d' },
+] as const;
 
-/** Never let a WebGL problem take the page down. */
-class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
-  state = { failed: false };
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-  componentDidCatch(err: unknown) {
-    console.warn('3D scene disabled:', err);
-  }
-  render() {
-    return this.state.failed ? null : this.props.children;
-  }
-}
+/** Set to false to hide the theme picker once a theme is chosen (DEFAULT_THEME stays). */
+const SHOW_THEME_PICKER = true;
+const DEFAULT_THEME: (typeof THEMES)[number]['id'] = 'lumen';
 
-function hasWebGL() {
-  try {
-    const c = document.createElement('canvas');
-    return !!(c.getContext('webgl2') || c.getContext('webgl'));
-  } catch {
-    return false;
-  }
-}
-
-/** Small fixed read-outs in the bottom corners: where you are on the page. */
-function CornerHud() {
-  const { scrollYProgress } = useScroll();
-  const progress = useSpring(scrollYProgress, { stiffness: 200, damping: 40 });
-  const [index, setIndex] = useState(0);
-  const [atEnd, setAtEnd] = useState(false);
-  useEffect(() => scrollYProgress.on('change', (v) => setAtEnd(v > 0.985)), [scrollYProgress]);
-
-  useEffect(() => {
-    const ids = ['top', ...nav.map((n) => n.id)];
-    const els = ids.map((id) => document.getElementById(id)).filter(Boolean) as HTMLElement[];
-    const io = new IntersectionObserver(
-      (entries) => entries.forEach((e) => e.isIntersecting && setIndex(ids.indexOf(e.target.id))),
-      { rootMargin: '-45% 0px -50% 0px' },
-    );
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, []);
-
-  const label = index === 0 ? 'Intro' : nav[index - 1].label;
+function ThemePicker({ theme, onPick }: { theme: string; onPick: (id: string) => void }) {
   return (
-    <>
-      <div className={`corner-hud left label ${index === 0 ? '' : 'off'}`} aria-hidden>
-        <span>{profile.location}</span>
-        <span>49.44° N, 11.85° E</span>
-      </div>
-      <div className={`corner-hud right label ${atEnd ? 'off' : ''}`} aria-hidden>
-        <span>
-          <b>{String(index).padStart(2, '0')}</b> / {String(nav.length).padStart(2, '0')}
-        </span>
-        <span className="bar">
-          <motion.span style={{ scaleX: progress }} />
-        </span>
-        <span>{label}</span>
-      </div>
-    </>
+    <div className="theme-picker" role="group" aria-label="Colour theme">
+      <span className="label">Theme</span>
+      {THEMES.map((t) => (
+        <button key={t.id} className={theme === t.id ? 'on' : ''} onClick={() => onPick(t.id)} aria-pressed={theme === t.id}>
+          <i style={{ background: `linear-gradient(135deg, ${t.bg} 50%, ${t.swatch} 50%)` }} />
+          {t.name}
+        </button>
+      ))}
+    </div>
   );
 }
 
 export default function App() {
   const reduced = useReducedMotion() ?? false;
-  const [webgl] = useState(hasWebGL);
-  const [showScene, setShowScene] = useState(false);
+  const [theme, setTheme] = useState<string>(() => {
+    if (!SHOW_THEME_PICKER) return DEFAULT_THEME;
+    try {
+      const saved = localStorage.getItem('theme');
+      return THEMES.some((t) => t.id === saved) ? (saved as string) : DEFAULT_THEME;
+    } catch {
+      return DEFAULT_THEME;
+    }
+  });
   const [intro, setIntro] = useState(() => {
     try {
       return !sessionStorage.getItem('intro-seen') && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -94,12 +62,16 @@ export default function App() {
     setIntro(false);
   }, []);
 
-  // The scene is bright in the hero and at the very end, quiet behind the content in between
-  const { scrollY, scrollYProgress } = useScroll();
-  const [vh] = useState(() => window.innerHeight);
-  const heroFade = useTransform(scrollY, [0, vh * 0.9], [1, 0.3]);
-  const endFade = useTransform(scrollYProgress, [0.92, 1], [0, 0.45]);
-  const sceneOpacity = useTransform([heroFade, endFade], ([a, b]: number[]) => Math.min(1, a + b));
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    const bg = THEMES.find((t) => t.id === theme)?.bg ?? '#f0f1f8';
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bg);
+    try {
+      localStorage.setItem('theme', theme);
+    } catch {
+      /* storage blocked: fine */
+    }
+  }, [theme]);
 
   // Smooth scrolling
   useEffect(() => {
@@ -117,14 +89,6 @@ export default function App() {
     };
   }, [reduced]);
 
-  // Load the 3D scene after first paint so text is interactive immediately
-  useEffect(() => {
-    if (!webgl) return;
-    const idle = (window as Window & { requestIdleCallback?: (cb: () => void, o?: object) => number }).requestIdleCallback;
-    if (idle) idle(() => setShowScene(true), { timeout: 600 });
-    else setTimeout(() => setShowScene(true), 200);
-  }, [webgl]);
-
   // Respect an initial #section hash
   useEffect(() => {
     const id = location.hash.slice(1);
@@ -137,32 +101,18 @@ export default function App() {
       <a href="#main" className="skip-link">
         Skip to content
       </a>
-      {showScene && (
-        <motion.div className="scene-layer" style={{ opacity: sceneOpacity }} aria-hidden>
-          <motion.div style={{ width: '100%', height: '100%' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 2 }}>
-            <SceneBoundary>
-              <Suspense fallback={null}>
-                <Scene reducedMotion={reduced} />
-              </Suspense>
-            </SceneBoundary>
-          </motion.div>
-        </motion.div>
-      )}
-      <div className="vignette" aria-hidden />
-
       <Nav onNavigate={scrollToId} />
       <main id="main">
-        <Hero key={intro ? 'pre' : 'live'} onNavigate={scrollToId} />
+        <Hero key={intro ? 'pre' : 'live'} onNavigate={scrollToId} reduced={reduced} />
         <About />
         <Projects />
         <Experience />
         <Skills />
         <Background />
         <Beyond />
-        <Contact />
+        <Contact onTop={() => scrollToId('top')} />
       </main>
-      <Footer onTop={() => scrollToId('top')} />
-      <CornerHud />
+      {SHOW_THEME_PICKER && <ThemePicker theme={theme} onPick={setTheme} />}
     </>
   );
 }
