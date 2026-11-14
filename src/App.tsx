@@ -95,6 +95,7 @@ export default function App() {
     if (reduced) return;
     const lenis = new Lenis({ lerp: 0.085, smoothWheel: true });
     scroll.lenis = lenis;
+    (window as unknown as { __lenis?: Lenis }).__lenis = lenis; // lets tests jump to an exact position
     let raf = requestAnimationFrame(function loop(t) {
       lenis.raf(t);
       raf = requestAnimationFrame(loop);
@@ -122,7 +123,7 @@ export default function App() {
       <main id="main">
         <Hero key={intro ? 'pre' : 'live'} reduced={reduced} />
         <Statement onNavigate={scrollToId} reduced={reduced} />
-        <About />
+        <About reduced={reduced} />
         <Projects />
         <Experience />
         <Skills />

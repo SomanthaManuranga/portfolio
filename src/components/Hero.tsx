@@ -29,9 +29,15 @@ function hasWebGL() {
   }
 }
 
-/** The theme's accent for dark surfaces, re-read whenever the theme changes. */
-function useAccentOnDark() {
-  const read = () => getComputedStyle(document.documentElement).getPropertyValue('--accent-on-dark').trim() || '#93a4ff';
+/** The theme's accent colours (for dark surfaces, and the full-strength brand colour), re-read when the theme changes. */
+function useThemeColours() {
+  const read = () => {
+    const css = getComputedStyle(document.documentElement);
+    return {
+      accent: css.getPropertyValue('--accent-on-dark').trim() || '#93a4ff',
+      brand: css.getPropertyValue('--accent').trim() || '#1f3bff',
+    };
+  };
   const [accent, setAccent] = useState(read);
   useEffect(() => {
     const mo = new MutationObserver(() => setAccent(read()));
@@ -44,7 +50,7 @@ function useAccentOnDark() {
 export default function Hero({ reduced }: { reduced: boolean }) {
   const [webgl] = useState(hasWebGL);
   const [showScene, setShowScene] = useState(false);
-  const accent = useAccentOnDark();
+  const { accent, brand } = useThemeColours();
   const panel = useRef<HTMLDivElement>(null);
 
   // The panel settles back slightly as it scrolls away
@@ -63,8 +69,12 @@ export default function Hero({ reduced }: { reduced: boolean }) {
   return (
     <section className="hero" id="top">
       <div className="container">
-        <h1 className="hero-title">
-          <SplitReveal text={`${profile.name}, AI engineer. I build computer vision, LLM and automation systems for industry.`} delay={0.15} immediate />
+        <h1 className="hero-title" aria-label={`${profile.name}, AI engineer. I build computer vision, LLM and automation systems for industry.`}>
+          <SplitReveal
+            text="*I'm an* AI engineer. *I build* computer vision, LLM *and* automation systems *for industry.*"
+            delay={0.15}
+            immediate
+          />
         </h1>
 
         <motion.div
@@ -78,7 +88,7 @@ export default function Hero({ reduced }: { reduced: boolean }) {
           {showScene && (
             <SceneBoundary>
               <Suspense fallback={null}>
-                <Scene reducedMotion={reduced} accent={accent} />
+                <Scene reducedMotion={reduced} accent={accent} brand={brand} />
               </Suspense>
             </SceneBoundary>
           )}
@@ -89,6 +99,10 @@ export default function Hero({ reduced }: { reduced: boolean }) {
               </span>
             </div>
             <div className="orow">
+              <span className="hero-hint label">
+                <span className="for-mouse">Move through the parts · click to scatter</span>
+                <span className="for-touch">Tap to scatter the parts</span>
+              </span>
               <div className="hero-focus">
                 {profile.rotatingRoles.map((r) => (
                   <span key={r} className="chip">

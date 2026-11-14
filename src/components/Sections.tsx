@@ -1,5 +1,5 @@
-import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion';
-import { ArrowUp, ArrowUpRight, Check, ChevronLeft, ChevronRight, Copy, Download, FileText } from 'lucide-react';
+import { AnimatePresence, easeInOut, motion, useMotionValueEvent, useReducedMotion, useTransform } from 'framer-motion';
+import { ArrowDown, ArrowUp, ArrowUpRight, Check, ChevronLeft, ChevronRight, Copy, Download, FileText } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import {
   beyond,
@@ -12,7 +12,7 @@ import {
   talks,
   venture,
 } from '../data/content';
-import { asset, GithubIcon, LinkedinIcon, Reveal, RollText, SectionHead } from './ui';
+import { asset, CharReveal, GithubIcon, LinkedinIcon, Reveal, Ribbon, RollText, SectionHead, useBoxProgress } from './ui';
 
 /* ================================================================== */
 /*  Experience                                                         */
@@ -21,7 +21,7 @@ export function Experience() {
   return (
     <section className="section" id="experience">
       <div className="container">
-        <SectionHead eyebrow="Experience" title="Industry experience, engineering first" />
+        <SectionHead eyebrow="Experience" title="Industry experience, *engineering first*" />
         <div className="rows">
           {experience.map((job, i) => (
             <Reveal key={job.company} delay={0.05 * i} as="article" className="row">
@@ -70,24 +70,111 @@ export function Experience() {
 /* ================================================================== */
 /*  Skills                                                             */
 /* ================================================================== */
-export function Skills() {
+const ALL_SKILLS = skillGroups.flatMap((g) => g.items);
+const ROW_A = ALL_SKILLS.filter((_, i) => i % 2 === 0);
+const ROW_B = ALL_SKILLS.filter((_, i) => i % 2 === 1);
+const rise = [0.22, 1, 0.36, 1] as const;
+
+function SkillCard({ title, items, i }: { title: string; items: string[]; i: number }) {
+  // A soft light follows the cursor across the card
+  const onMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    e.currentTarget.style.setProperty('--mx', `${e.clientX - r.left}px`);
+    e.currentTarget.style.setProperty('--my', `${e.clientY - r.top}px`);
+  };
   return (
-    <section className="section" id="skills">
+    <motion.div
+      className="skill-col roll-host"
+      onPointerMove={onMove}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, margin: '0px 0px -12% 0px' }}
+      variants={{
+        hidden: { opacity: 0, y: 44 },
+        show: {
+          opacity: 1,
+          y: 0,
+          transition: { duration: 0.8, delay: 0.07 * (i % 3), ease: rise, staggerChildren: 0.04, delayChildren: 0.2 + 0.07 * (i % 3) },
+        },
+      }}
+    >
+      <div className="skill-top">
+        <span className="label">0{i + 1}</span>
+        <span className="label">{items.length} skills</span>
+      </div>
+      <h3>
+        <RollText text={title} />
+      </h3>
+      <div className="chips">
+        {items.map((s) => (
+          <motion.span
+            key={s}
+            className="chip"
+            variants={{
+              hidden: { opacity: 0, scale: 0.6, y: 12 },
+              show: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 420, damping: 24 } },
+            }}
+          >
+            {s}
+          </motion.span>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+export function Skills() {
+  const reduced = useReducedMotion() ?? false;
+  const band = useRef<HTMLDivElement>(null);
+  // Two rows of skill names slide past each other as the section scrolls by
+  const drift = useBoxProgress(band, ({ top, height, vh }) => [top - vh, top + height]);
+  const xa = useTransform(drift, [0, 1], ['0%', '-24%']);
+  const xb = useTransform(drift, [0, 1], ['-24%', '0%']);
+  return (
+    <section className="section has-ribbon" id="skills">
+      <Ribbon
+        className="r-skills"
+        tone="blue"
+        reduced={reduced}
+        from={0.85}
+        to={0.05}
+        points={[
+          [-0.06, 0.3],
+          [0.14, 0.08],
+          [0.4, 0.04],
+          [0.6, 0.2],
+          [0.62, 0.5],
+          [0.46, 0.68],
+          [0.3, 0.56],
+          [0.34, 0.3],
+          [0.56, 0.2],
+          [0.82, 0.34],
+          [1.06, 0.62],
+        ]}
+      />
       <div className="container">
-        <SectionHead eyebrow="Toolkit" title="The stack behind the work" />
+        <SectionHead eyebrow="Toolkit" title="The stack *behind* the work" />
+      </div>
+      <div className="skill-band" ref={band} aria-hidden>
+        <motion.div style={reduced ? undefined : { x: xa }}>
+          {ROW_A.map((s, i) => (
+            <span key={s} className={i % 3 === 1 ? 'muted' : ''}>
+              {s}
+            </span>
+          ))}
+        </motion.div>
+        <motion.div style={reduced ? undefined : { x: xb }}>
+          {ROW_B.map((s, i) => (
+            <span key={s} className={i % 3 === 0 ? 'muted' : ''}>
+              {s}
+            </span>
+          ))}
+        </motion.div>
+      </div>
+      <div className="container">
         <div className="skill-cols">
           {skillGroups.map((g, i) => (
-            <Reveal key={g.title} delay={0.05 * i} className="skill-col">
-              <span className="label">0{i + 1}</span>
-              <h3>{g.title}</h3>
-              <div className="chips">
-                {g.items.map((s) => (
-                  <span key={s} className="chip">
-                    {s}
-                  </span>
-                ))}
-              </div>
-            </Reveal>
+            <SkillCard key={g.title} title={g.title} items={g.items} i={i} />
           ))}
         </div>
       </div>
@@ -102,7 +189,7 @@ export function Background() {
   return (
     <section className="section" id="education">
       <div className="container">
-        <SectionHead eyebrow="Education" title="Education and continuous learning" />
+        <SectionHead eyebrow="Education" title="Education *and continuous* learning" />
         <div className="rows">
           {education.map((e, i) => (
             <Reveal key={e.school} delay={0.05 * i} as="article" className="row">
@@ -262,7 +349,7 @@ export function Beyond() {
   return (
     <section className="section" id="beyond">
       <div className="container">
-        <SectionHead eyebrow="Beyond" title="Maker, teammate, founder" />
+        <SectionHead eyebrow="Beyond" title="Maker, *teammate,* founder" />
         <Reveal className="venture">
           <div className="venture-text">
             <span className="label">Entrepreneurship</span>
@@ -300,9 +387,29 @@ const STRIP = ['Computer vision', 'LLMs & NLP', 'Industrial AI', 'Automation', '
 
 export function Contact({ onTop }: { onTop: () => void }) {
   const [copied, setCopied] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'start 0.25'] });
-  const scale = useTransform(scrollYProgress, [0, 1], [0.9, 1]);
+  const reduced = useReducedMotion() ?? false;
+  const wrap = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(reduced);
+  const [narrow, setNarrow] = useState(() => typeof window !== 'undefined' && window.innerWidth < 820);
+
+  useEffect(() => {
+    const onResize = () => setNarrow(window.innerWidth < 820);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // While the page is held, the tilted dark card straightens and grows until it fills the screen
+  const pin = useBoxProgress(wrap, ({ top, height, vh }) => [top, top + height - vh]);
+  const grow = { ease: easeInOut };
+  const scale = useTransform(pin, [0.08, 0.6], [narrow ? 0.66 : 0.46, 1], grow);
+  const rotate = useTransform(pin, [0.08, 0.6], [narrow ? -5 : -7, 0], grow);
+  const x = useTransform(pin, [0.08, 0.6], [narrow ? '0vw' : '-23vw', '0vw'], grow);
+  const y = useTransform(pin, [0.08, 0.6], [narrow ? '13vh' : '3vh', '0vh'], grow);
+  const radius = useTransform(pin, [0.08, 0.6], [56, 0], grow);
+  const asideX = useTransform(pin, [0.08, 0.42], ['0vw', '34vw']);
+  const asideRotate = useTransform(pin, [0.08, 0.42], [0, 9]);
+  const asideOpacity = useTransform(pin, [0.08, 0.36], [1, 0]);
+  useMotionValueEvent(pin, 'change', (v) => setOpen(reduced || v > 0.56));
 
   const copy = async () => {
     try {
@@ -316,26 +423,48 @@ export function Contact({ onTop }: { onTop: () => void }) {
 
   return (
     <section className="contact" id="contact">
-      <div className="container">
-        <motion.div ref={ref} className="end dark-panel" style={{ scale }}>
-          <div className="end-crosses label" aria-hidden>
-            <span className="plus">+</span>
-            <span className="plus">+</span>
-            <span className="plus">+</span>
-          </div>
-          <p className="end-sub label">Have a role, a thesis topic or a project in mind?</p>
-          <a className="end-title roll-host" href={`mailto:${profile.email}`}>
-            <RollText text="Let's work together!" />
-          </a>
-          <div className="end-strip" aria-hidden>
-            <div>
-              {[...STRIP, ...STRIP, ...STRIP, ...STRIP].map((s, i) => (
-                <span key={i}>{s}</span>
-              ))}
-            </div>
-          </div>
-        </motion.div>
+      <div className={`end-wrap${reduced ? ' static' : ''}`} ref={wrap}>
+        <div className="end-stick">
+          <motion.div
+            className="end-aside"
+            style={reduced ? undefined : { x: asideX, rotate: asideRotate, opacity: asideOpacity }}
+          >
+            <span className="label">Contact</span>
+            <p>
+              A role, a thesis topic <span className="muted">or a project in mind?</span>
+            </p>
+            <p className="end-aside-small">
+              I am based in {profile.location} and reply to every message. Keep scrolling for the details.
+            </p>
+          </motion.div>
 
+          <motion.div
+            className={`end dark-panel${open ? ' open' : ''}`}
+            style={reduced ? undefined : { scale, rotate, x, y, borderRadius: radius }}
+          >
+            <span className="plus c1" aria-hidden>+</span>
+            <span className="plus c2" aria-hidden>+</span>
+            <span className="plus c3" aria-hidden>+</span>
+            <span className="plus c4" aria-hidden>+</span>
+            <p className="end-sub label">Have a role, a thesis topic or a project in mind?</p>
+            <a className="end-title" href={`mailto:${profile.email}`} tabIndex={open ? 0 : -1}>
+              <CharReveal text="Let's work together!" shown={open} />
+            </a>
+            <span className="end-more pill light" aria-hidden>
+              <ArrowDown /> Continue to scroll <ArrowDown />
+            </span>
+            <div className="end-strip" aria-hidden>
+              <div>
+                {[...STRIP, ...STRIP, ...STRIP, ...STRIP].map((s, i) => (
+                  <span key={i}>{s}</span>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      <div className="container">
         <footer className="footer">
           <div className="footer-cols">
             <div>

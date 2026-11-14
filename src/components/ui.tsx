@@ -1,5 +1,5 @@
 import { motion, useInView, useMotionValue, useScroll, useSpring, useTransform, type MotionValue, type Variants } from 'framer-motion';
-import { useEffect, useRef, type CSSProperties, type ReactNode, type SVGProps } from 'react';
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode, type RefObject, type SVGProps } from 'react';
 
 /** Resolve a path in /public against the deploy base (e.g. /portfolio/). */
 export const asset = (path: string) =>
@@ -130,20 +130,36 @@ export function RollText({ text }: { text: string }) {
   );
 }
 
-/** Heading text that rises word by word from behind a mask when it scrolls into view. */
+/** `*like this*` marks words to set in grey; everything else stays in the main text colour. */
+function toneWords(text: string) {
+  const out: { word: string; muted: boolean }[] = [];
+  text.split('*').forEach((seg, i) =>
+    seg
+      .split(' ')
+      .filter(Boolean)
+      .forEach((word) => out.push({ word, muted: i % 2 === 1 })),
+  );
+  return out;
+}
+export const plainText = (text: string) => text.replace(/\*/g, '');
+
+/**
+ * Heading text that rises word by word from behind a mask when it scrolls into view.
+ * Wrap words in asterisks to set them in grey: "Built *to deploy*".
+ */
 export function SplitReveal({ text, delay = 0, immediate = false }: { text: string; delay?: number; immediate?: boolean }) {
   // `immediate` plays on mount (for text that is on screen at load) instead of waiting to scroll into view
   const trigger = immediate ? { animate: 'show' } : { whileInView: 'show', viewport: { once: true, margin: '0px 0px -10% 0px' } };
   return (
     <motion.span
       className="split"
-      aria-label={text}
+      aria-label={plainText(text)}
       initial="hidden"
       {...trigger}
       transition={{ staggerChildren: 0.055, delayChildren: delay }}
     >
-      {text.split(' ').map((word, i) => (
-        <span key={i} className="split-word" aria-hidden>
+      {toneWords(text).map(({ word, muted }, i) => (
+        <span key={i} className={`split-word${muted ? ' muted' : ''}`} aria-hidden>
           <motion.span
             variants={{ hidden: { y: '110%' }, show: { y: 0 } }}
             transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
@@ -153,6 +169,130 @@ export function SplitReveal({ text, delay = 0, immediate = false }: { text: stri
         </span>
       ))}
     </motion.span>
+  );
+}
+
+/** Letters that rise one after another once `shown` is true. */
+export function CharReveal({ text, shown }: { text: string; shown: boolean }) {
+  let n = 0;
+  return (
+    <span className={`chars${shown ? ' in' : ''}`} aria-label={text}>
+      {text.split(' ').map((word, w) => (
+        <span key={w} className="chars-word" aria-hidden>
+          {Array.from(word).map((ch) => {
+            const i = n++;
+            return (
+              <span key={i} className="chars-ch">
+                <span style={{ '--i': i } as CSSProperties}>{ch}</span>
+              </span>
+            );
+          })}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/**
+ * Scroll progress from 0 to 1 between two page offsets worked out from an element's box.
+ * Measured by hand so it stays correct around sticky and transformed elements.
+ */
+export function useBoxProgress(
+  ref: RefObject<HTMLElement>,
+  range: (box: { top: number; height: number; vh: number }) => [number, number],
+): MotionValue<number> {
+  const { scrollY } = useScroll();
+  const mv = useMotionValue(0);
+  const rangeRef = useRef(range);
+  rangeRef.current = range;
+  useEffect(() => {
+    let lim: [number, number] = [0, 1];
+    const update = (y: number) => mv.set(Math.min(1, Math.max(0, (y - lim[0]) / Math.max(1, lim[1] - lim[0]))));
+    const measure = () => {
+      const el = ref.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      lim = rangeRef.current({ top: r.top + window.scrollY, height: r.height, vh: window.innerHeight });
+      update(window.scrollY);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(document.body);
+    window.addEventListener('resize', measure);
+    const off = scrollY.on('change', update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+      off();
+    };
+  }, [ref, scrollY, mv]);
+  return mv;
+}
+
+/** A smooth curve through the given points (Catmull-Rom converted to cubic Béziers). */
+function splinePath(pts: [number, number][]) {
+  let d = `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] ?? pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] ?? p2;
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    d += ` C${c1[0].toFixed(1)} ${c1[1].toFixed(1)} ${c2[0].toFixed(1)} ${c2[1].toFixed(1)} ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;
+  }
+  return d;
+}
+
+/**
+ * A thick ribbon line that draws itself as the page scrolls and sits behind the content.
+ * `points` are [x, y] fractions of the ribbon's own box; values outside 0..1 run off the edge.
+ * `from` and `to` say when drawing starts and ends, as the viewport fraction the box top has reached.
+ */
+export function Ribbon({
+  points,
+  className = '',
+  tone = 'blue',
+  from = 0.85,
+  to = -0.2,
+  reduced = false,
+}: {
+  points: [number, number][];
+  className?: string;
+  tone?: 'blue' | 'cyan';
+  from?: number;
+  to?: number;
+  reduced?: boolean;
+}) {
+  const box = useRef<HTMLDivElement>(null);
+  const id = useId().replace(/:/g, '');
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const measure = () => setSize({ w: el.offsetWidth, h: el.offsetHeight });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const progress = useBoxProgress(box, ({ top, vh }) => [top - vh * from, top - vh * to]);
+  const opacity = useTransform(progress, [0, 0.015], [0, 1]);
+  const d = size.w ? splinePath(points.map(([x, y]) => [x * size.w, y * size.h])) : '';
+  return (
+    <div ref={box} className={`ribbon ribbon-${tone} ${className}`} aria-hidden>
+      {d && (
+        <svg width={size.w} height={size.h}>
+          <defs>
+            <linearGradient id={id} gradientUnits="userSpaceOnUse" x1={0} y1={0} x2={size.w} y2={size.h}>
+              <stop offset="0" className="ribbon-a" />
+              <stop offset="1" className="ribbon-b" />
+            </linearGradient>
+          </defs>
+          <motion.path d={d} stroke={`url(#${id})`} style={reduced ? undefined : { pathLength: progress, opacity }} />
+        </svg>
+      )}
+    </div>
   );
 }
 

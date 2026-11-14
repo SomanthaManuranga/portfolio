@@ -6,7 +6,7 @@ import { categories, projects, type Category, type Link, type Project } from '..
 import { lockScroll } from '../lib/scroll';
 import { sound } from '../lib/sound';
 import ProjectVisual from './ProjectVisual';
-import { GithubIcon, Reveal, RollText, SectionHead } from './ui';
+import { GithubIcon, Reveal, SectionHead } from './ui';
 
 const linkIcon = (kind: Link['kind']) =>
   kind === 'code' ? <GithubIcon /> : kind === 'demo' ? <PlayCircle /> : kind === 'paper' ? <BookOpen /> : <FileText />;
@@ -31,8 +31,9 @@ function WorkCard({ p, onOpen }: { p: Project; onOpen: (p: Project) => void }) {
           <span>{p.category}</span>
           <span>{p.year}</span>
         </div>
-        <h3>
-          <RollText text={p.title} />
+        <h3 className="wcard-title">
+          <ArrowRight className="wcard-arrow" aria-hidden />
+          <span>{p.title}</span>
         </h3>
         <p>{p.summary}</p>
         <div className="wcard-foot">
@@ -274,7 +275,7 @@ export default function Projects() {
       <div className="container">
         <SectionHead
           eyebrow="Work"
-          title="Projects with measured results"
+          title="Projects *with* measured results"
           sub="Each card shows what the project is and its headline result, taken from a held-out evaluation in the public repository. Open one for the full story."
         />
 

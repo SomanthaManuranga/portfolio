@@ -1,43 +1,54 @@
-import { useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { sceneState } from '../lib/scroll';
 
 /**
- * The hero panel's 3D scene: a dark machined gimbal (three rings around a faceted
- * core) lit by one light that follows the pointer. Scrolling turns the rings.
- * It only renders while the hero is on screen.
+ * The hero panel's 3D scene: a cluster of machine parts (gears, nuts, bearings,
+ * rounded blocks, balls) in blue, black and white. They are pulled toward the
+ * centre, collide with each other, and get pushed aside by the cursor. A click
+ * scatters them. The physics is a small hand-written sphere solver, so no
+ * physics library is loaded. It only renders while the hero is on screen.
  */
 
-const input = { mx: 0.4, my: 0.3, hasPointer: false, hero: 0 };
+const input = { mx: 0.4, my: 0.3, hasPointer: false, inside: false, hero: 0, burst: false };
 
 function useInputListeners() {
   useEffect(() => {
+    const locate = (e: PointerEvent) => {
+      const r = document.querySelector('.hero-panel')?.getBoundingClientRect();
+      if (!r) return false;
+      input.mx = Math.max(-1.4, Math.min(1.4, ((e.clientX - r.left) / r.width) * 2 - 1));
+      input.my = -Math.max(-1.4, Math.min(1.4, ((e.clientY - r.top) / r.height) * 2 - 1));
+      input.inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+      return input.inside;
+    };
     const onMove = (e: PointerEvent) => {
       if (e.pointerType !== 'mouse') return;
       input.hasPointer = true;
-      // Position relative to the hero panel, so the light and the beads sit under the cursor
-      const r = document.querySelector('.hero-panel')?.getBoundingClientRect();
-      const nx = r ? ((e.clientX - r.left) / r.width) * 2 - 1 : (e.clientX / window.innerWidth) * 2 - 1;
-      const ny = r ? ((e.clientY - r.top) / r.height) * 2 - 1 : (e.clientY / window.innerHeight) * 2 - 1;
-      input.mx = Math.max(-1.5, Math.min(1.5, nx));
-      input.my = -Math.max(-1.5, Math.min(1.5, ny));
+      locate(e);
+    };
+    const onDown = (e: PointerEvent) => {
+      if (locate(e)) input.burst = true;
     };
     const onScroll = () => {
       input.hero = Math.min(1.4, window.scrollY / window.innerHeight);
     };
     onScroll();
     window.addEventListener('pointermove', onMove, { passive: true });
+    window.addEventListener('pointerdown', onDown, { passive: true });
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerdown', onDown);
       window.removeEventListener('scroll', onScroll);
     };
   }, []);
 }
 
-/** Soft studio reflections so the dark metal reads as metal. */
+/** Soft studio reflections so the glossy parts read as glossy. */
 function Environment() {
   const { gl, scene } = useThree();
   useEffect(() => {
@@ -53,150 +64,286 @@ function Environment() {
   return null;
 }
 
-function Gimbal({ segments }: { segments: number }) {
-  const rings = useRef<THREE.Mesh[]>([]);
-  const core = useRef<THREE.Mesh>(null!);
-  const nodes = useRef<THREE.InstancedMesh>(null!);
-
-  const metal = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: '#3a3f47', metalness: 0.92, roughness: 0.26, envMapIntensity: 1.1 }),
-    [],
-  );
-  const coreMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: '#22262c', metalness: 0.85, roughness: 0.18, envMapIntensity: 1.2, flatShading: true }),
-    [],
-  );
-  const nodeMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#4a505a', metalness: 0.8, roughness: 0.4 }), []);
-
-  const ringDefs = useMemo(
-    () => [
-      { r: 1.5, tube: 0.062, tilt: [0.5, 0.2, 0] as const, speed: 0.11 },
-      { r: 1.95, tube: 0.05, tilt: [1.25, -0.4, 0.3] as const, speed: -0.075 },
-      { r: 2.42, tube: 0.04, tilt: [-0.35, 0.9, 0.6] as const, speed: 0.05 },
-    ],
-    [],
-  );
-
-  // Small machined studs around the outer ring, like an encoder wheel
-  const NODE_COUNT = 60;
-  useEffect(() => {
-    const m = new THREE.Matrix4();
-    const q = new THREE.Quaternion();
-    const s = new THREE.Vector3();
-    for (let i = 0; i < NODE_COUNT; i++) {
-      const a = (i / NODE_COUNT) * Math.PI * 2;
-      q.setFromEuler(new THREE.Euler(0, 0, a));
-      s.set(i % 5 === 0 ? 0.18 : 0.08, 0.024, 0.024);
-      m.compose(new THREE.Vector3(Math.cos(a) * 2.95, Math.sin(a) * 2.95, 0), q, s);
-      nodes.current.setMatrixAt(i, m);
-    }
-    nodes.current.instanceMatrix.needsUpdate = true;
-  }, []);
-
-  useFrame((state, dt) => {
-    const t = state.clock.elapsedTime;
-    const scrollTurn = input.hero * Math.PI * 1.1;
-    ringDefs.forEach((d, i) => {
-      const ring = rings.current[i];
-      if (!ring) return;
-      ring.rotation.x = d.tilt[0] + t * d.speed + scrollTurn * (i % 2 ? -0.6 : 0.8);
-      ring.rotation.y = d.tilt[1] + t * d.speed * 0.7 + scrollTurn * 0.4;
-      ring.rotation.z = d.tilt[2];
-    });
-    core.current.rotation.y += dt * 0.12;
-    core.current.rotation.x = 0.4 + Math.sin(t * 0.25) * 0.15;
-    nodes.current.rotation.z = t * 0.03 - scrollTurn * 0.25;
+/* ---------------- Part shapes ---------------- */
+function extrude(shape: THREE.Shape, depth: number) {
+  const g = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    bevelEnabled: true,
+    bevelThickness: 0.05,
+    bevelSize: 0.05,
+    bevelSegments: 3,
+    curveSegments: 22,
   });
-
-  return (
-    <group>
-      <mesh ref={core} material={coreMat}>
-        <icosahedronGeometry args={[0.72, 1]} />
-      </mesh>
-      {ringDefs.map((d, i) => (
-        <mesh key={i} ref={(m) => { if (m) rings.current[i] = m; }} material={metal}>
-          <torusGeometry args={[d.r, d.tube, 4, segments]} />
-        </mesh>
-      ))}
-      <instancedMesh ref={nodes} args={[undefined, undefined, NODE_COUNT]} material={nodeMat} rotation={[1.15, 0.25, 0]}>
-        <boxGeometry args={[1, 1, 1]} />
-      </instancedMesh>
-    </group>
-  );
+  g.center();
+  return g;
+}
+function hole(shape: THREE.Shape, r: number) {
+  const h = new THREE.Path();
+  h.absarc(0, 0, r, 0, Math.PI * 2, true);
+  shape.holes.push(h);
+}
+function gearGeometry() {
+  const shape = new THREE.Shape();
+  const teeth = 9;
+  const step = (Math.PI * 2) / teeth;
+  for (let k = 0; k < teeth; k++) {
+    const a = k * step;
+    const pts: [number, number][] = [
+      [0.76, a],
+      [0.76, a + step * 0.2],
+      [1, a + step * 0.34],
+      [1, a + step * 0.66],
+      [0.76, a + step * 0.8],
+    ];
+    pts.forEach(([r, ang], i) => {
+      const x = Math.cos(ang) * r;
+      const y = Math.sin(ang) * r;
+      if (k === 0 && i === 0) shape.moveTo(x, y);
+      else shape.lineTo(x, y);
+    });
+  }
+  shape.closePath();
+  hole(shape, 0.3);
+  return extrude(shape, 0.5);
+}
+function nutGeometry() {
+  const shape = new THREE.Shape();
+  for (let k = 0; k < 6; k++) {
+    const a = (k / 6) * Math.PI * 2;
+    if (k === 0) shape.moveTo(Math.cos(a), Math.sin(a));
+    else shape.lineTo(Math.cos(a), Math.sin(a));
+  }
+  shape.closePath();
+  hole(shape, 0.46);
+  return extrude(shape, 0.66);
 }
 
-/**
- * Small metal beads drifting around the gimbal. Each one is tied to a home position
- * by a spring and pushed away by the pointer, so moving the mouse stirs them.
- */
-function Beads({ count }: { count: number }) {
-  const mesh = useRef<THREE.InstancedMesh>(null!);
-  const { viewport } = useThree();
-  const state = useMemo(() => {
-    const home = new Float32Array(count * 3);
-    const pos = new Float32Array(count * 3);
-    const vel = new Float32Array(count * 3);
-    const size = new Float32Array(count);
-    for (let i = 0; i < count; i++) {
-      const a = (i / count) * Math.PI * 2 + Math.random() * 0.5;
-      const r = 3.4 + Math.random() * 2.6;
-      home[i * 3] = Math.cos(a) * r * 1.35;
-      home[i * 3 + 1] = Math.sin(a) * r * 0.62;
-      home[i * 3 + 2] = (Math.random() - 0.5) * 2.2;
-      pos.set(home.subarray(i * 3, i * 3 + 3), i * 3);
-      size[i] = 0.05 + Math.random() * 0.09;
-    }
-    return { home, pos, vel, size };
-  }, [count]);
+/** Small deterministic random generator, so the cluster looks the same on every visit. */
+function rng(seed: number) {
+  let a = seed;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+type Body = {
+  kind: number;
+  slot: number;
+  r: number;
+  scale: number;
+  p: THREE.Vector3;
+  v: THREE.Vector3;
+  q: THREE.Quaternion;
+  w: THREE.Vector3;
+  spin: THREE.Vector3;
+};
+
+function Cluster({ lowPower, brand }: { lowPower: boolean; brand: string }) {
+  const group = useRef<THREE.Group>(null!);
+  const meshes = useRef<THREE.InstancedMesh[]>([]);
+  const { camera, size } = useThree();
+
+  // Each kind: a geometry, how round it is for collisions, and how many of it
+  const kinds = useMemo(() => {
+    const n = lowPower ? 0.5 : 1;
+    return [
+      { geo: gearGeometry(), collide: 0.84, count: Math.round(10 * n) },
+      { geo: nutGeometry(), collide: 0.9, count: Math.round(8 * n) },
+      { geo: new THREE.TorusGeometry(0.64, 0.34, 20, 44), collide: 0.9, count: Math.round(7 * n) },
+      { geo: new RoundedBoxGeometry(1.3, 1.3, 1.3, 4, 0.24), collide: 0.92, count: Math.round(7 * n) },
+      { geo: new THREE.SphereGeometry(1, 40, 28), collide: 1, count: Math.round(9 * n) },
+      { geo: new THREE.CapsuleGeometry(0.5, 0.86, 8, 22), collide: 0.82, count: Math.round(4 * n) },
+    ];
+  }, [lowPower]);
+
   const material = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: '#aeb4be', metalness: 0.95, roughness: 0.22, envMapIntensity: 1.1 }),
+    () =>
+      lowPower
+        ? new THREE.MeshStandardMaterial({ roughness: 0.34, metalness: 0.08, envMapIntensity: 0.55 })
+        : new THREE.MeshPhysicalMaterial({ roughness: 0.34, metalness: 0.06, clearcoat: 0.8, clearcoatRoughness: 0.22, envMapIntensity: 0.55 }),
+    [lowPower],
+  );
+
+  const bodies = useMemo(() => {
+    const rand = rng(7);
+    const list: Body[] = [];
+    kinds.forEach((k, kind) => {
+      for (let slot = 0; slot < k.count; slot++) {
+        const scale = (lowPower ? 0.52 : 0.5) + rand() * 0.42;
+        // Start far out so the parts fly in and assemble when the page opens
+        const a = rand() * Math.PI * 2;
+        const d = 9 + rand() * 6;
+        list.push({
+          kind,
+          slot,
+          scale,
+          r: scale * k.collide,
+          p: new THREE.Vector3(Math.cos(a) * d * 1.4, Math.sin(a) * d * 0.8, (rand() - 0.5) * 6),
+          v: new THREE.Vector3(),
+          q: new THREE.Quaternion().setFromEuler(new THREE.Euler(rand() * 6, rand() * 6, rand() * 6)),
+          w: new THREE.Vector3(),
+          spin: new THREE.Vector3(rand() - 0.5, rand() - 0.5, rand() - 0.5).multiplyScalar(0.5),
+        });
+      }
+    });
+    return list;
+  }, [kinds, lowPower]);
+
+  // Blue, black and white, mixed evenly across every kind of part
+  useEffect(() => {
+    const rand = rng(21);
+    const palette = [new THREE.Color(brand), new THREE.Color('#090a0e'), new THREE.Color('#e4e6ee')];
+    const counters = kinds.map(() => 0);
+    bodies.forEach((b) => {
+      const mesh = meshes.current[b.kind];
+      if (!mesh) return;
+      const pick = (counters[b.kind]++ + b.kind + (rand() < 0.25 ? 1 : 0)) % 3;
+      mesh.setColorAt(b.slot, palette[pick]);
+    });
+    meshes.current.forEach((m) => {
+      if (m?.instanceColor) m.instanceColor.needsUpdate = true;
+    });
+  }, [bodies, kinds, brand]);
+
+  const tmp = useMemo(
+    () => ({
+      m: new THREE.Matrix4(),
+      s: new THREE.Vector3(),
+      n: new THREE.Vector3(),
+      ptr: new THREE.Vector3(),
+      dir: new THREE.Vector3(),
+      dq: new THREE.Quaternion(),
+      axis: new THREE.Vector3(),
+    }),
     [],
   );
-  const dummy = useMemo(() => new THREE.Object3D(), []);
 
-  useFrame((clock, dtRaw) => {
-    const dt = Math.min(dtRaw, 0.05);
-    const t = clock.clock.elapsedTime;
-    // Pointer position on the z = 0 plane, in world units
-    const px = (input.mx * viewport.width) / 2;
-    const py = (input.my * viewport.height) / 2;
-    const { home, pos, vel, size } = state;
-    for (let i = 0; i < count; i++) {
-      const k = i * 3;
-      // Spring back to a slowly bobbing home position
-      const hx = home[k] + Math.sin(t * 0.3 + i) * 0.25;
-      const hy = home[k + 1] + Math.cos(t * 0.24 + i * 1.7) * 0.25;
-      let ax = (hx - pos[k]) * 2.2;
-      let ay = (hy - pos[k + 1]) * 2.2;
-      const az = (home[k + 2] - pos[k + 2]) * 2.2;
-      if (input.hasPointer) {
-        const dx = pos[k] - px;
-        const dy = pos[k + 1] - py;
-        const d2 = dx * dx + dy * dy + 0.05;
-        if (d2 < 5) {
-          const f = 9 / d2;
-          ax += (dx / Math.sqrt(d2)) * f;
-          ay += (dy / Math.sqrt(d2)) * f;
+  useFrame((state, dtRaw) => {
+    const dt = Math.min(dtRaw, 1 / 30);
+    const t = state.clock.elapsedTime;
+    const aspect = size.width / size.height;
+    const wide = aspect > 1.5;
+
+    // Fit the cluster to the panel and let it drift back a little on scroll
+    const g = group.current;
+    const target = (wide ? 1.16 : Math.max(0.74, Math.min(1.02, aspect * 0.86))) * (1 + input.hero * 0.1);
+    g.scale.setScalar(THREE.MathUtils.damp(g.scale.x || target, target, 3, dt));
+    g.position.y = input.hero * 0.9;
+    const gs = g.scale.x;
+
+    // Pointer on the z = 0 plane, in the cluster's own units
+    tmp.dir.set(input.mx, input.my, 0.5).unproject(camera).sub(camera.position).normalize();
+    const k = -camera.position.z / tmp.dir.z;
+    tmp.ptr.copy(camera.position).addScaledVector(tmp.dir, k).divideScalar(gs);
+    const pointerOn = input.hasPointer && input.inside;
+
+    // The centre the parts are pulled toward wanders slowly, so the cluster never freezes
+    const cx = Math.sin(t * 0.31) * (wide ? 0.9 : 0.25);
+    const cy = Math.cos(t * 0.27) * 0.28;
+    const kx = wide ? 0.5 : 1.5;
+    const pull = 3.4;
+    const damp = Math.exp(-2.1 * dt);
+
+    for (const b of bodies) {
+      const { p, v } = b;
+      let ax = -(p.x - cx) * kx * pull;
+      let ay = -(p.y - cy) * 1.5 * pull;
+      const az = -p.z * 2.8 * pull;
+      // A gentle swirl
+      ax += -p.y * 0.55;
+      ay += p.x * 0.3;
+      if (input.burst) {
+        tmp.n.copy(p).sub(tmp.ptr);
+        const d2 = tmp.n.lengthSq();
+        tmp.n.normalize();
+        v.addScaledVector(tmp.n, 17 / (1 + d2 * 0.22));
+      }
+      v.x = (v.x + ax * dt) * damp;
+      v.y = (v.y + ay * dt) * damp;
+      v.z = (v.z + az * dt) * damp;
+      p.addScaledVector(v, dt);
+    }
+    input.burst = false;
+
+    // Collisions: two passes keep the pile from sinking into itself
+    for (let pass = 0; pass < 2; pass++) {
+      for (let i = 0; i < bodies.length; i++) {
+        const a = bodies[i];
+        for (let j = i + 1; j < bodies.length; j++) {
+          const c = bodies[j];
+          const min = a.r + c.r;
+          tmp.n.copy(c.p).sub(a.p);
+          const d2 = tmp.n.lengthSq();
+          if (d2 >= min * min || d2 < 1e-8) continue;
+          const d = Math.sqrt(d2);
+          tmp.n.multiplyScalar(1 / d);
+          const overlap = (min - d) * 0.5;
+          a.p.addScaledVector(tmp.n, -overlap);
+          c.p.addScaledVector(tmp.n, overlap);
+          const vn = (c.v.x - a.v.x) * tmp.n.x + (c.v.y - a.v.y) * tmp.n.y + (c.v.z - a.v.z) * tmp.n.z;
+          if (vn < 0) {
+            const imp = -0.6 * vn;
+            a.v.addScaledVector(tmp.n, -imp);
+            c.v.addScaledVector(tmp.n, imp);
+          }
         }
       }
-      vel[k] = (vel[k] + ax * dt) * 0.92;
-      vel[k + 1] = (vel[k + 1] + ay * dt) * 0.92;
-      vel[k + 2] = (vel[k + 2] + az * dt) * 0.92;
-      pos[k] += vel[k] * dt;
-      pos[k + 1] += vel[k + 1] * dt;
-      pos[k + 2] += vel[k + 2] * dt;
-      dummy.position.set(pos[k], pos[k + 1], pos[k + 2]);
-      dummy.scale.setScalar(size[i]);
-      dummy.updateMatrix();
-      mesh.current.setMatrixAt(i, dummy.matrix);
+      if (pointerOn) {
+        for (const b of bodies) {
+          const min = b.r + 1.25;
+          tmp.n.copy(b.p).sub(tmp.ptr);
+          tmp.n.z *= 0.6;
+          const d2 = tmp.n.lengthSq();
+          if (d2 >= min * min || d2 < 1e-8) continue;
+          const d = Math.sqrt(d2);
+          tmp.n.multiplyScalar(1 / d);
+          const overlap = min - d;
+          b.p.addScaledVector(tmp.n, overlap * 0.35);
+          b.v.addScaledVector(tmp.n, overlap * 26 * dt);
+        }
+      }
     }
-    mesh.current.instanceMatrix.needsUpdate = true;
+
+    // Spin follows the motion, like something rolling, on top of a slow idle tumble
+    const spinEase = 1 - Math.exp(-3 * dt);
+    for (const b of bodies) {
+      b.w.x += (b.v.y * -0.9 + b.spin.x - b.w.x) * spinEase;
+      b.w.y += (b.v.x * 0.9 + b.spin.y - b.w.y) * spinEase;
+      b.w.z += ((b.v.x - b.v.y) * 0.3 + b.spin.z - b.w.z) * spinEase;
+      const speed = b.w.length();
+      if (speed > 1e-5) {
+        tmp.axis.copy(b.w).multiplyScalar(1 / speed);
+        tmp.dq.setFromAxisAngle(tmp.axis, speed * dt);
+        b.q.premultiply(tmp.dq);
+      }
+      tmp.s.setScalar(b.scale);
+      tmp.m.compose(b.p, b.q, tmp.s);
+      meshes.current[b.kind]?.setMatrixAt(b.slot, tmp.m);
+    }
+    meshes.current.forEach((m) => {
+      if (m) m.instanceMatrix.needsUpdate = true;
+    });
   });
 
   return (
-    <instancedMesh ref={mesh} args={[undefined, undefined, count]} material={material} frustumCulled={false}>
-      <sphereGeometry args={[1, 24, 24]} />
-    </instancedMesh>
+    <group ref={group}>
+      {kinds.map((k, i) => (
+        <instancedMesh
+          key={i}
+          ref={(m) => {
+            if (m) meshes.current[i] = m;
+          }}
+          args={[k.geo, material, k.count]}
+          castShadow={!lowPower}
+          receiveShadow={!lowPower}
+          frustumCulled={false}
+        />
+      ))}
+    </group>
   );
 }
 
@@ -205,9 +352,9 @@ function Dust({ count }: { count: number }) {
   const geometry = useMemo(() => {
     const pos = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 24;
-      pos[i * 3 + 1] = (Math.random() - 0.5) * 10;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 10 - 2;
+      pos[i * 3] = (Math.random() - 0.5) * 26;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 11;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 8 - 5;
     }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -218,61 +365,62 @@ function Dust({ count }: { count: number }) {
   });
   return (
     <points ref={ref} geometry={geometry}>
-      <pointsMaterial color="#dfe3ea" size={0.024} sizeAttenuation transparent opacity={0.4} depthWrite={false} />
+      <pointsMaterial color="#dfe3ea" size={0.024} sizeAttenuation transparent opacity={0.35} depthWrite={false} />
     </points>
   );
 }
 
-/** The single key light. Follows the mouse; on touch devices it drifts on its own. */
-function PointerLight() {
-  const light = useRef<THREE.PointLight>(null!);
+/** Lights: a key light that casts the shadows, a coloured rim, and one that follows the cursor. */
+function Lights({ accent, shadows }: { accent: string; shadows: boolean }) {
+  const follow = useRef<THREE.PointLight>(null!);
+  const rim = useRef<THREE.DirectionalLight>(null!);
+  const { camera } = useThree();
+  useEffect(() => {
+    rim.current.color.set(accent);
+  }, [accent]);
   useFrame((state, dt) => {
     const t = state.clock.elapsedTime;
     const tx = input.hasPointer ? input.mx * 6 : Math.cos(t * 0.35) * 3.4;
     const ty = input.hasPointer ? input.my * 3.2 : Math.sin(t * 0.5) * 1.8;
-    light.current.position.x = THREE.MathUtils.damp(light.current.position.x, tx, 3, dt);
-    light.current.position.y = THREE.MathUtils.damp(light.current.position.y, ty, 3, dt);
-  });
-  return <pointLight ref={light} position={[2, 1, 3.4]} color="#fff6ea" intensity={95} distance={16} decay={2} />;
-}
-
-function Rig({ mobile, accent, children }: { mobile: boolean; accent: string; children: ReactNode }) {
-  const group = useRef<THREE.Group>(null!);
-  const rim = useRef<THREE.DirectionalLight>(null!);
-  const { camera, size } = useThree();
-
-  useEffect(() => {
-    rim.current.color.set(accent);
-  }, [accent]);
-
-  useFrame((_, dt) => {
-    // Fit the whole gimbal into the panel whatever its shape
-    const aspect = size.width / size.height;
-    const fit = Math.min(1, aspect / 1.15) * (mobile ? 0.92 : 0.88);
-    const g = group.current;
-    g.scale.setScalar(THREE.MathUtils.damp(g.scale.x, fit * (1 + input.hero * 0.12), 3, dt));
-    g.position.x = mobile ? 0 : THREE.MathUtils.damp(g.position.x, 0.6 + input.mx * 0.25, 2.5, dt);
-    g.rotation.y = THREE.MathUtils.damp(g.rotation.y, input.mx * 0.22, 2.5, dt);
-    g.rotation.x = THREE.MathUtils.damp(g.rotation.x, -input.my * 0.14, 2.5, dt);
-    camera.position.x = THREE.MathUtils.damp(camera.position.x, input.mx * 0.3, 2, dt);
-    camera.position.y = THREE.MathUtils.damp(camera.position.y, input.my * 0.18, 2, dt);
+    follow.current.position.x = THREE.MathUtils.damp(follow.current.position.x, tx, 3, dt);
+    follow.current.position.y = THREE.MathUtils.damp(follow.current.position.y, ty, 3, dt);
+    camera.position.x = THREE.MathUtils.damp(camera.position.x, input.mx * 0.35, 2, dt);
+    camera.position.y = THREE.MathUtils.damp(camera.position.y, input.my * 0.2, 2, dt);
     camera.lookAt(0, 0, 0);
   });
-
   return (
     <>
-      <directionalLight ref={rim} position={[-6, 3, -4]} intensity={2.2} />
-      <group ref={group}>{children}</group>
+      <ambientLight intensity={0.42} />
+      <directionalLight
+        position={[5, 8, 9]}
+        intensity={2.0}
+        castShadow={shadows}
+        shadow-mapSize={[1024, 1024]}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.05}
+        shadow-camera-left={-9}
+        shadow-camera-right={9}
+        shadow-camera-top={6}
+        shadow-camera-bottom={-6}
+        shadow-camera-near={1}
+        shadow-camera-far={30}
+      />
+      <directionalLight position={[-7, -3, 5]} intensity={0.55} />
+      <directionalLight ref={rim} position={[-6, 4, -5]} intensity={2.4} />
+      <pointLight ref={follow} position={[2, 1, 4.2]} color="#ffffff" intensity={20} distance={14} decay={2} />
     </>
   );
 }
 
 /** Render only while the hero is on screen and nothing covers the page. */
-function Ticker() {
+function Ticker({ settleOnly }: { settleOnly: boolean }) {
   const invalidate = useThree((s) => s.invalidate);
   useEffect(() => {
     let raf = 0;
+    const started = performance.now();
     const loop = () => {
+      // With reduced motion the parts still need a few seconds to come together, then everything stops
+      if (settleOnly && performance.now() - started > 5000) return;
       raf = requestAnimationFrame(loop);
       if (document.hidden || sceneState.paused) return;
       if (window.scrollY > window.innerHeight * 1.15) return;
@@ -280,11 +428,11 @@ function Ticker() {
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [invalidate]);
+  }, [invalidate, settleOnly]);
   return null;
 }
 
-export default function Scene({ reducedMotion, accent }: { reducedMotion: boolean; accent: string }) {
+export default function Scene({ reducedMotion, accent, brand }: { reducedMotion: boolean; accent: string; brand: string }) {
   useInputListeners();
   const mobile = typeof window !== 'undefined' && window.innerWidth < 820;
   const lowPower = mobile || (navigator.hardwareConcurrency ?? 8) <= 4;
@@ -295,18 +443,16 @@ export default function Scene({ reducedMotion, accent }: { reducedMotion: boolea
       dpr={[1, lowPower ? 1.5 : 1.8]}
       camera={{ position: [0, 0, 8.6], fov: 40 }}
       gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+      shadows={!lowPower}
+      flat
       frameloop="demand"
       aria-hidden
     >
-      {!reducedMotion && <Ticker />}
+      <Ticker settleOnly={reducedMotion} />
       <Environment />
-      <ambientLight intensity={0.3} />
-      <PointerLight />
-      <Rig mobile={mobile} accent={accent}>
-        <Gimbal segments={lowPower ? 120 : 220} />
-      </Rig>
-      <Beads count={lowPower ? 14 : 26} />
-      <Dust count={lowPower ? 200 : 460} />
+      <Lights accent={accent} shadows={!lowPower} />
+      <Cluster lowPower={lowPower} brand={brand} />
+      <Dust count={lowPower ? 160 : 380} />
     </Canvas>
   );
 }
