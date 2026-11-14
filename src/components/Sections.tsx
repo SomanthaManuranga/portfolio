@@ -1,5 +1,5 @@
 import { AnimatePresence, easeInOut, motion, useMotionValueEvent, useReducedMotion, useTransform } from 'framer-motion';
-import { ArrowDown, ArrowUp, ArrowUpRight, Check, ChevronLeft, ChevronRight, Copy, Download, FileText } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpRight, Award, Check, ChevronLeft, ChevronRight, Copy, Download, FileText } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import {
   beyond,
@@ -242,17 +242,18 @@ export function Background() {
         <Reveal>
           <h3 className="subhead">Certifications</h3>
         </Reveal>
-        <div className="list">
+        <div className="cert-grid">
           {certifications.map((c, i) => (
-            <Reveal key={c.title} delay={0.04 * i}>
-              <a className="list-row" href={c.href} target="_blank" rel="noopener" aria-label={`${c.title}: view certificate`}>
-                <div>
-                  <h4>{c.title}</h4>
-                  <span className="label">{c.issuer}</span>
-                </div>
+            <Reveal key={c.title} delay={0.06 * i}>
+              <a className="cert roll-host" href={c.href} target="_blank" rel="noopener">
+                <span className="cert-icon" aria-hidden>
+                  <Award />
+                </span>
+                <h4>{c.title}</h4>
+                <span className="label">{c.issuer}</span>
                 <p>{c.note}</p>
-                <span className="go" aria-hidden>
-                  <ArrowUpRight />
+                <span className="cert-more label">
+                  <RollText text="View certificate" /> <ArrowUpRight />
                 </span>
               </a>
             </Reveal>

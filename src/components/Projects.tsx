@@ -6,7 +6,7 @@ import { categories, projects, type Category, type Link, type Project } from '..
 import { lockScroll } from '../lib/scroll';
 import { sound } from '../lib/sound';
 import ProjectVisual from './ProjectVisual';
-import { GithubIcon, Reveal, SectionHead } from './ui';
+import { GithubIcon, Reveal, RollText, SectionHead } from './ui';
 
 const linkIcon = (kind: Link['kind']) =>
   kind === 'code' ? <GithubIcon /> : kind === 'demo' ? <PlayCircle /> : kind === 'paper' ? <BookOpen /> : <FileText />;
@@ -31,9 +31,8 @@ function WorkCard({ p, onOpen }: { p: Project; onOpen: (p: Project) => void }) {
           <span>{p.category}</span>
           <span>{p.year}</span>
         </div>
-        <h3 className="wcard-title">
-          <ArrowRight className="wcard-arrow" aria-hidden />
-          <span>{p.title}</span>
+        <h3>
+          <RollText text={p.title} />
         </h3>
         <p>{p.summary}</p>
         <div className="wcard-foot">

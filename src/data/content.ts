@@ -588,12 +588,8 @@ export const endorsements = [
   },
 ];
 
-export const principles = [
-  { title: 'Physics-aware ML', text: 'Bring physical constraints and domain knowledge into models so they stay robust and explainable on mechanical systems.' },
-  { title: 'Honest evaluation', text: 'Held-out splits, failure analysis and ablations, so the reported number is the one you get in production.' },
-  { title: 'Production-ready AI', text: 'Latency, memory and reliability matter as much as accuracy: ONNX export, edge rules, small GPUs.' },
-  { title: 'Cyber-physical systems', text: 'Digital twins and connected robots that turn sensor data into decisions for Industry 4.0.' },
-];
+/** How the About line ends; the phrases take turns. Each one stands for a way of working shown in the projects. */
+export const aboutPhrases = ['physics-aware.', 'honestly evaluated.', 'small enough to deploy.', 'wired to real machines.'];
 
 export const venture = {
   name: 'VYROBA TECHS',
