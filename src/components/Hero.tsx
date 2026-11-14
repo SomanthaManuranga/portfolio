@@ -1,6 +1,7 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { profile } from '../data/content';
+import { cellStats } from '../lib/heroStats';
 import { SplitReveal } from './ui';
 
 const Scene = lazy(() => import('../three/Scene'));
@@ -29,28 +30,44 @@ function hasWebGL() {
   }
 }
 
-/** The theme's accent colours (for dark surfaces, and the full-strength brand colour), re-read when the theme changes. */
-function useThemeColours() {
-  const read = () => {
-    const css = getComputedStyle(document.documentElement);
-    return {
-      accent: css.getPropertyValue('--accent-on-dark').trim() || '#93a4ff',
-      brand: css.getPropertyValue('--accent').trim() || '#1f3bff',
-    };
-  };
-  const [accent, setAccent] = useState(read);
-  useEffect(() => {
-    const mo = new MutationObserver(() => setAccent(read()));
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-    return () => mo.disconnect();
-  }, []);
-  return accent;
+function useCellStats() {
+  const [s, setS] = useState(cellStats.get);
+  useEffect(() => cellStats.subscribe(setS), []);
+  return s;
+}
+const pad = (n: number) => String(n).padStart(3, '0');
+
+/** Live counters from the inspection line in the 3D scene. They count that simulation only. */
+function CellHud() {
+  const s = useCellStats();
+  return (
+    <div className="cell-hud label" aria-hidden>
+      <span>
+        <b>{pad(s.inspected)}</b> inspected
+      </span>
+      <span>
+        <b>{pad(s.passed)}</b> passed
+      </span>
+      <span className="bad">
+        <b>{pad(s.rejected)}</b> rejected
+      </span>
+    </div>
+  );
+}
+
+/** The line's last decision, written out like a log entry. */
+function CellLog() {
+  const s = useCellStats();
+  return (
+    <span className="cell-log" aria-hidden>
+      <span key={s.log}>› {s.log}</span>
+    </span>
+  );
 }
 
 export default function Hero({ reduced }: { reduced: boolean }) {
   const [webgl] = useState(hasWebGL);
   const [showScene, setShowScene] = useState(false);
-  const { accent, brand } = useThemeColours();
   const panel = useRef<HTMLDivElement>(null);
 
   // The panel settles back slightly as it scrolls away
@@ -88,7 +105,7 @@ export default function Hero({ reduced }: { reduced: boolean }) {
           {showScene && (
             <SceneBoundary>
               <Suspense fallback={null}>
-                <Scene reducedMotion={reduced} accent={accent} brand={brand} />
+                <Scene reducedMotion={reduced} />
               </Suspense>
             </SceneBoundary>
           )}
@@ -97,12 +114,18 @@ export default function Hero({ reduced }: { reduced: boolean }) {
               <span className="status label">
                 <span className="status-dot" /> {profile.availability}
               </span>
+              {showScene && <CellHud />}
             </div>
             <div className="orow">
-              <span className="hero-hint label">
-                <span className="for-mouse">Move through the parts · click to scatter</span>
-                <span className="for-touch">Tap to scatter the parts</span>
-              </span>
+              <div className="hero-note">
+                {showScene && <CellLog />}
+                {showScene && (
+                  <span className="hero-hint label">
+                    <span className="for-mouse">The arm follows your cursor · click a part to reject it</span>
+                    <span className="for-touch">Tap a part to reject it</span>
+                  </span>
+                )}
+              </div>
               <div className="hero-focus">
                 {profile.rotatingRoles.map((r) => (
                   <span key={r} className="chip">
