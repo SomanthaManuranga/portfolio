@@ -1,5 +1,5 @@
-import { motion, useInView, useMotionValue, useSpring, type Variants } from 'framer-motion';
-import { useEffect, useRef, type ReactNode, type SVGProps } from 'react';
+import { motion, useInView, useMotionValue, useScroll, useSpring, useTransform, type MotionValue, type Variants } from 'framer-motion';
+import { useEffect, useRef, type CSSProperties, type ReactNode, type SVGProps } from 'react';
 
 /** Resolve a path in /public against the deploy base (e.g. /portfolio/). */
 export const asset = (path: string) =>
@@ -36,12 +36,14 @@ export function Reveal({
   );
 }
 
-export function SectionHead({ eyebrow, title, sub }: { eyebrow: string; title: ReactNode; sub?: string }) {
+export function SectionHead({ eyebrow, title, sub }: { eyebrow: string; title: string; sub?: string }) {
   return (
     <Reveal className="section-head">
       <div>
         <span className="label">{eyebrow}</span>
-        <h2>{title}</h2>
+        <h2>
+          <SplitReveal text={title} />
+        </h2>
       </div>
       {sub && <p>{sub}</p>}
     </Reveal>
@@ -100,5 +102,75 @@ export function Magnetic({ children, strength = 0.3 }: { children: ReactNode; st
     <span ref={ref} className="magnetic" onPointerMove={onMove} onPointerLeave={reset}>
       {children}
     </span>
+  );
+}
+
+/**
+ * Text whose letters roll upward to a second copy when the nearest `.roll-host`
+ * ancestor is hovered or focused. Words stay whole, so long titles still wrap.
+ */
+export function RollText({ text }: { text: string }) {
+  let n = 0;
+  return (
+    <span className="roll" aria-label={text}>
+      {text.split(' ').map((word, w) => (
+        <span key={w} className="roll-word" aria-hidden>
+          {Array.from(word).map((ch) => {
+            const i = n++;
+            return (
+              <span key={i} className="roll-ch" style={{ '--i': Math.min(i, 30) } as CSSProperties}>
+                <span>{ch}</span>
+                <span>{ch}</span>
+              </span>
+            );
+          })}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** Heading text that rises word by word from behind a mask when it scrolls into view. */
+export function SplitReveal({ text, delay = 0, immediate = false }: { text: string; delay?: number; immediate?: boolean }) {
+  // `immediate` plays on mount (for text that is on screen at load) instead of waiting to scroll into view
+  const trigger = immediate ? { animate: 'show' } : { whileInView: 'show', viewport: { once: true, margin: '0px 0px -10% 0px' } };
+  return (
+    <motion.span
+      className="split"
+      aria-label={text}
+      initial="hidden"
+      {...trigger}
+      transition={{ staggerChildren: 0.055, delayChildren: delay }}
+    >
+      {text.split(' ').map((word, i) => (
+        <span key={i} className="split-word" aria-hidden>
+          <motion.span
+            variants={{ hidden: { y: '110%' }, show: { y: 0 } }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {word}
+          </motion.span>
+        </span>
+      ))}
+    </motion.span>
+  );
+}
+
+function ScrollWord({ word, range, progress }: { word: string; range: [number, number]; progress: MotionValue<number> }) {
+  const opacity = useTransform(progress, range, [0.16, 1]);
+  return <motion.span style={{ opacity }}>{word} </motion.span>;
+}
+
+/** A paragraph whose words go from faint to solid as it is scrolled through. */
+export function ScrollWords({ text, className }: { text: string; className?: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 0.9', 'start 0.35'] });
+  const words = text.split(' ');
+  return (
+    <p ref={ref} className={className}>
+      {words.map((w, i) => (
+        <ScrollWord key={i} word={w} progress={scrollYProgress} range={[i / words.length, Math.min(1, (i + 1.5) / words.length)]} />
+      ))}
+    </p>
   );
 }

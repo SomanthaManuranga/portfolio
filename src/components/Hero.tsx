@@ -1,8 +1,7 @@
-import { motion } from 'framer-motion';
-import { Download } from 'lucide-react';
-import { Component, lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { profile } from '../data/content';
-import { asset } from './ui';
+import { SplitReveal } from './ui';
 
 const Scene = lazy(() => import('../three/Scene'));
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -42,10 +41,16 @@ function useAccentOnDark() {
   return accent;
 }
 
-export default function Hero({ onNavigate, reduced }: { onNavigate: (id: string) => void; reduced: boolean }) {
+export default function Hero({ reduced }: { reduced: boolean }) {
   const [webgl] = useState(hasWebGL);
   const [showScene, setShowScene] = useState(false);
   const accent = useAccentOnDark();
+  const panel = useRef<HTMLDivElement>(null);
+
+  // The panel settles back slightly as it scrolls away
+  const { scrollYProgress } = useScroll({ target: panel, offset: ['start 0.2', 'end start'] });
+  const scale = useTransform(scrollYProgress, [0, 1], [1, 0.94]);
+  const y = useTransform(scrollYProgress, [0, 1], [0, 40]);
 
   // Load the 3D scene after first paint so the text is interactive immediately
   useEffect(() => {
@@ -58,42 +63,17 @@ export default function Hero({ onNavigate, reduced }: { onNavigate: (id: string)
   return (
     <section className="hero" id="top">
       <div className="container">
-        <div className="hero-top">
-          <motion.h1
-            className="hero-title"
-            initial={{ opacity: 0, y: 26 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, ease }}
-          >
-            {profile.name}. <span className="muted">{profile.role} building computer vision, LLM and automation systems for industry.</span>
-          </motion.h1>
-          <motion.div
-            className="hero-ctas"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, delay: 0.25, ease }}
-          >
-            <a
-              href="#projects"
-              className="pill dark"
-              onClick={(e) => {
-                e.preventDefault();
-                onNavigate('projects');
-              }}
-            >
-              View work <span className="dot" />
-            </a>
-            <a href={asset(profile.cv)} target="_blank" rel="noopener" className="pill">
-              Download CV <Download />
-            </a>
-          </motion.div>
-        </div>
+        <h1 className="hero-title">
+          <SplitReveal text={`${profile.name}, AI engineer. I build computer vision, LLM and automation systems for industry.`} delay={0.15} immediate />
+        </h1>
 
         <motion.div
+          ref={panel}
           className="hero-panel dark-panel"
-          initial={{ opacity: 0, y: 30, scale: 0.985 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 1.1, delay: 0.15, ease }}
+          style={reduced ? undefined : { scale, y }}
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.2, delay: 0.2, ease }}
         >
           {showScene && (
             <SceneBoundary>
@@ -107,17 +87,8 @@ export default function Hero({ onNavigate, reduced }: { onNavigate: (id: string)
               <span className="status label">
                 <span className="status-dot" /> {profile.availability}
               </span>
-              <span className="plus" aria-hidden>
-                +
-              </span>
             </div>
             <div className="orow">
-              <span className="label">
-                <span className="plus" aria-hidden>
-                  +
-                </span>
-                &nbsp;&nbsp;Scroll to explore
-              </span>
               <div className="hero-focus">
                 {profile.rotatingRoles.map((r) => (
                   <span key={r} className="chip">
@@ -127,6 +98,20 @@ export default function Hero({ onNavigate, reduced }: { onNavigate: (id: string)
               </div>
             </div>
           </div>
+        </motion.div>
+
+        <motion.div
+          className="scroll-row label"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 0.9 }}
+          aria-hidden
+        >
+          <span className="plus">+</span>
+          <span className="plus">+</span>
+          <span className="scroll-text">Scroll to explore</span>
+          <span className="plus">+</span>
+          <span className="plus">+</span>
         </motion.div>
       </div>
     </section>

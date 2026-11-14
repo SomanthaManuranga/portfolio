@@ -71,7 +71,7 @@
   --gutter: clamp(16px, 3.4vw, 48px);
   --radius: 22px;
   --radius-sm: 14px;
-  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease: cubic-bezier(0.35, 0, 0, 1);
 }
 
 *,
@@ -145,7 +145,7 @@ h2,
 h3,
 h4 {
   font-family: var(--font-display);
-  font-weight: 500;
+  font-weight: 400;
   letter-spacing: -0.035em;
   line-height: 1.04;
 }
@@ -213,7 +213,9 @@ h4 {
   margin-bottom: 18px;
 }
 .section-head h2 {
-  font-size: clamp(2.2rem, 5.6vw, 4.8rem);
+  font-size: clamp(2.4rem, 7.4vw, 7.2rem);
+  letter-spacing: -0.045em;
+  line-height: 0.94;
 }
 .section-head p {
   color: var(--text-2);
@@ -1824,5 +1826,543 @@ a.list-row:hover .go {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+}
+
+/* ==================================================================
+   Motion details: rolling letters, masked headings, pills
+   ================================================================== */
+.roll {
+  display: inline;
+}
+.roll-word {
+  display: inline-block;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+.roll-word {
+  margin-right: 0.26em;
+}
+.roll-word:last-child {
+  margin-right: 0;
+}
+.roll-ch {
+  display: inline-block;
+  overflow: hidden;
+  height: 1.16em;
+  line-height: 1.16em;
+  vertical-align: bottom;
+}
+.roll-ch > span {
+  display: block;
+  transition: transform 0.5s var(--ease);
+  transition-delay: calc(var(--i) * 14ms);
+}
+.roll-host:hover .roll-ch > span,
+.roll-host:focus-visible .roll-ch > span {
+  transform: translateY(-100%);
+}
+.split {
+  display: block;
+}
+.split-word {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  padding-bottom: 0.12em;
+  margin-bottom: -0.12em;
+}
+.split-word {
+  margin-right: 0.24em;
+}
+.split-word:last-child {
+  margin-right: 0;
+}
+.split-word > span {
+  display: inline-block;
+}
+
+/* Pills: the arrow slides in from the left, the dot grows */
+.pill {
+  position: relative;
+  overflow: hidden;
+}
+.pill-arrow {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  margin-top: -7.5px;
+  transform: translateX(-34px);
+  transition: transform 0.35s var(--ease);
+}
+.pill.talk .roll,
+.pill.cta .roll {
+  transition: transform 0.35s var(--ease);
+}
+.pill.talk:hover .pill-arrow {
+  transform: translateX(0);
+}
+.pill.talk:hover .roll {
+  transform: translateX(14px);
+}
+.pill.talk:hover .dot {
+  transform: scale(0);
+}
+.pill-arrow.at-end {
+  position: static;
+  margin: 0;
+  transform: translateX(-4px);
+  opacity: 0.6;
+}
+.pill.cta:hover .pill-arrow.at-end {
+  transform: translateX(3px);
+  opacity: 1;
+}
+
+/* Sound button */
+.sound-btn {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  box-shadow: 0 6px 24px -10px rgba(0, 0, 0, 0.25);
+  transition: background 0.35s var(--ease), color 0.35s var(--ease);
+}
+.sound-btn svg {
+  width: 24px;
+  height: 24px;
+}
+.sound-btn path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.sound-btn:hover,
+.sound-btn.on {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* Menu dots turn into a cross when open */
+.menu-dots i {
+  transition: transform 0.35s var(--ease);
+}
+.menu-dots.open i:first-child {
+  transform: translateX(4px) scaleX(2.4);
+}
+.menu-dots.open i:last-child {
+  transform: translateX(-4px) scaleX(2.4);
+}
+
+/* Scroll indicator on the right edge */
+.scroll-indicator {
+  position: fixed;
+  right: 6px;
+  top: 50%;
+  width: 3px;
+  height: 120px;
+  margin-top: -60px;
+  border-radius: 3px;
+  background: var(--line);
+  z-index: 90;
+  overflow: hidden;
+  pointer-events: none;
+}
+.scroll-indicator span {
+  position: absolute;
+  inset: 0;
+  background: var(--text);
+  border-radius: 3px;
+  transform-origin: top;
+}
+@media (max-width: 820px) {
+  .scroll-indicator {
+    display: none;
+  }
+}
+
+/* ==================================================================
+   Intro: bar and rolling counter
+   ================================================================== */
+.intro {
+  display: block;
+}
+.intro-bar {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(190px, 46vw);
+  height: 30px;
+  margin: -15px 0 0 calc(min(190px, 46vw) / -2);
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 0;
+  overflow: hidden;
+}
+.intro-count {
+  position: absolute;
+  left: var(--gutter);
+  bottom: clamp(10px, 2vw, 24px);
+  display: flex;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(4.5rem, 14vw, 11rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: #f3f4f8;
+}
+.intro-digit {
+  display: block;
+  height: 1em;
+  overflow: hidden;
+}
+.intro-digit > span {
+  display: block;
+  transition: transform 0.35s var(--ease);
+}
+.intro-digit i {
+  display: block;
+  height: 1em;
+  font-style: normal;
+}
+
+/* ==================================================================
+   Hero: small statement, large panel, scroll row
+   ================================================================== */
+.hero {
+  padding: clamp(104px, 15vh, 150px) 0 0;
+}
+.hero-title {
+  font-size: clamp(1.5rem, 2.6vw, 2.3rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  max-width: 17em;
+  margin-bottom: clamp(22px, 3vw, 34px);
+}
+.hero-panel {
+  height: clamp(380px, 72vh, 760px);
+  transform-origin: center top;
+}
+.hero-panel .orow {
+  justify-content: flex-end;
+}
+.hero-panel .orow.top {
+  justify-content: flex-start;
+}
+.scroll-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto 1fr auto;
+  align-items: center;
+  justify-items: center;
+  padding: 22px 4px;
+  color: var(--text);
+}
+.scroll-row .plus {
+  color: var(--text);
+  font-size: 1.2rem;
+}
+.scroll-row .scroll-text {
+  letter-spacing: 0.08em;
+}
+@media (max-width: 640px) {
+  .scroll-row {
+    grid-template-columns: auto 1fr auto;
+  }
+  .scroll-row .plus:nth-child(2),
+  .scroll-row .plus:nth-child(4) {
+    display: none;
+  }
+}
+
+/* ==================================================================
+   Statement and work reel
+   ================================================================== */
+.statement {
+  padding: clamp(40px, 7vw, 110px) 0 clamp(40px, 6vw, 90px);
+  overflow: hidden;
+}
+.statement-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.6rem, 9.2vw, 9.4rem);
+  line-height: 1;
+  letter-spacing: -0.045em;
+  display: grid;
+}
+.statement-title span {
+  display: block;
+  white-space: nowrap;
+  will-change: transform;
+}
+.statement-title span:last-child {
+  justify-self: end;
+  color: var(--text-3);
+}
+.reel-wrap {
+  position: relative;
+  margin-top: clamp(28px, 4vw, 60px);
+}
+.reel-desc {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: min(52%, 600px);
+  z-index: 2;
+}
+.reel-desc p {
+  font-size: clamp(1.05rem, 1.5vw, 1.35rem);
+  line-height: 1.4;
+  margin-bottom: 26px;
+}
+.reel {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  aspect-ratio: 16 / 8.2;
+  will-change: clip-path;
+}
+.reel-inner {
+  position: absolute;
+  inset: 0;
+  transform-origin: right top;
+}
+.reel-slide,
+.reel-slide .pv-wrap,
+.reel-slide .pv {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+}
+.reel-overlay {
+  position: absolute;
+  inset: 0;
+  padding: clamp(16px, 2.4vw, 30px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 55%, rgba(0, 0, 0, 0.6));
+}
+.reel-overlay .orow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+}
+.reel-overlay .orow.top {
+  align-items: center;
+  color: var(--text-2);
+}
+.reel-overlay h3 {
+  font-size: clamp(1.2rem, 2.6vw, 2.3rem);
+  font-weight: 400;
+  margin-top: 8px;
+  max-width: 18em;
+}
+@media (max-width: 900px) {
+  .reel-desc {
+    position: static;
+    width: auto;
+    margin-bottom: 26px;
+    opacity: 1 !important;
+  }
+  .reel {
+    clip-path: none !important;
+    aspect-ratio: 4 / 3.4;
+  }
+  .reel-inner {
+    transform: none !important;
+  }
+}
+
+/* ==================================================================
+   Work cards: closer to the reference proportions
+   ================================================================== */
+.wcard-media {
+  position: relative;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.wcard-tag {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.wcard h3 {
+  font-weight: 400;
+  font-size: clamp(1.3rem, 2.1vw, 1.9rem);
+}
+.work-grid > li.wide .wcard h3 {
+  font-size: clamp(1.4rem, 2.6vw, 2.4rem);
+}
+
+/* ==================================================================
+   Closing panel, strip and footer
+   ================================================================== */
+.end {
+  border-radius: var(--radius);
+  padding: clamp(26px, 4vw, 56px) clamp(20px, 4vw, 60px) 0;
+  overflow: hidden;
+  text-align: center;
+  transform-origin: center top;
+  background:
+    radial-gradient(60% 80% at 50% 0%, rgba(255, 255, 255, 0.09), transparent 60%),
+    var(--panel);
+}
+.end-crosses {
+  display: flex;
+  justify-content: space-between;
+}
+.end-sub {
+  margin: clamp(30px, 7vw, 100px) 0 clamp(14px, 2vw, 26px);
+  color: var(--text);
+}
+.end-title {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.2rem, 10.6vw, 9.6rem);
+  line-height: 1;
+  letter-spacing: -0.045em;
+  transition: color 0.4s var(--ease);
+}
+.end-title:hover {
+  color: var(--accent);
+}
+.end-strip {
+  margin: clamp(40px, 8vw, 110px) calc(clamp(20px, 4vw, 60px) * -1) 0;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  overflow: hidden;
+  white-space: nowrap;
+}
+.end-strip > div {
+  display: inline-flex;
+  animation: strip 46s linear infinite;
+}
+.end-strip span {
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  padding: 0 22px;
+}
+.end-strip span::after {
+  content: '+';
+  margin-left: 44px;
+  color: var(--accent);
+}
+@keyframes strip {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.footer {
+  padding: clamp(30px, 5vw, 60px) clamp(4px, 1vw, 12px) 10px;
+}
+.footer-cols {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 28px;
+}
+.footer-cols .label {
+  display: block;
+  margin-bottom: 14px;
+}
+.footer-cols p {
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+.footer-cols a.with-icon svg {
+  width: 16px;
+  height: 16px;
+  vertical-align: -2px;
+  margin-right: 6px;
+}
+.footer-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.footer-bottom {
+  margin-top: clamp(30px, 5vw, 60px);
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+@media (max-width: 900px) {
+  .footer-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 520px) {
+  .footer-cols {
+    grid-template-columns: 1fr;
+  }
+}
+@keyframes pvGrowX {
+  0% {
+    transform: scaleX(0.1);
+  }
+  40%,
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+/* The reel shows the illustration only; its small captions would collide with the title */
+.reel .pv-label,
+.reel .pv-tagtext,
+.reel .pv-tag {
+  display: none;
+}
+
+/* Reel slides cross-fade with plain CSS, so they never get stuck mid-animation */
+.reel-slide {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.7s var(--ease), visibility 0s 0.7s;
+}
+.reel-slide.on {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.7s var(--ease);
+}
+
+/* Phone header: the menu already has the contact link */
+@media (max-width: 560px) {
+  .nav .pill.talk {
+    display: none;
+  }
+  .brand {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .reel-overlay .orow:not(.top) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
 }

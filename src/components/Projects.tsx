@@ -4,8 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { categories, projects, type Category, type Link, type Project } from '../data/content';
 import { lockScroll } from '../lib/scroll';
+import { sound } from '../lib/sound';
 import ProjectVisual from './ProjectVisual';
-import { GithubIcon, Reveal, SectionHead } from './ui';
+import { GithubIcon, Reveal, RollText, SectionHead } from './ui';
 
 const linkIcon = (kind: Link['kind']) =>
   kind === 'code' ? <GithubIcon /> : kind === 'demo' ? <PlayCircle /> : kind === 'paper' ? <BookOpen /> : <FileText />;
@@ -20,14 +21,19 @@ function wideCount(n: number) {
 function WorkCard({ p, onOpen }: { p: Project; onOpen: (p: Project) => void }) {
   const m = p.metrics[0];
   return (
-    <button className="wcard" onClick={() => onOpen(p)} aria-haspopup="dialog">
-      <ProjectVisual slug={p.slug} />
+    <button className="wcard roll-host" onClick={() => onOpen(p)} aria-haspopup="dialog">
+      <div className="wcard-media">
+        <ProjectVisual slug={p.slug} />
+        <span className="wcard-tag">{p.featured ? 'Featured' : 'Case study'}</span>
+      </div>
       <div className="wcard-body">
         <div className="wcard-tags label">
           <span>{p.category}</span>
           <span>{p.year}</span>
         </div>
-        <h3>{p.title}</h3>
+        <h3>
+          <RollText text={p.title} />
+        </h3>
         <p>{p.summary}</p>
         <div className="wcard-foot">
           <div>
@@ -228,6 +234,7 @@ export default function Projects() {
   }, []);
 
   const openProject = useCallback((p: Project) => {
+    sound.open();
     setOpen(p);
     history.replaceState(null, '', `#project/${p.slug}`);
   }, []);
@@ -236,11 +243,13 @@ export default function Projects() {
       if (!cur) return cur;
       const i = projects.findIndex((x) => x.slug === cur.slug);
       const nextP = projects[(i + dir + projects.length) % projects.length];
+      sound.step();
       history.replaceState(null, '', `#project/${nextP.slug}`);
       return nextP;
     });
   }, []);
   const close = useCallback(() => {
+    sound.close();
     setOpen(null);
     history.replaceState(null, '', '#projects');
   }, []);
@@ -265,7 +274,7 @@ export default function Projects() {
       <div className="container">
         <SectionHead
           eyebrow="Work"
-          title={<>Projects with measured results</>}
+          title="Projects with measured results"
           sub="Each card shows what the project is and its headline result, taken from a held-out evaluation in the public repository. Open one for the full story."
         />
 

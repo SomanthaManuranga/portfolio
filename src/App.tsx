@@ -1,4 +1,4 @@
-import { AnimatePresence, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion, useScroll, useSpring } from 'framer-motion';
 import Lenis from 'lenis';
 import { useCallback, useEffect, useState } from 'react';
 import About from './components/About';
@@ -6,8 +6,10 @@ import Hero from './components/Hero';
 import Intro from './components/Intro';
 import Nav from './components/Nav';
 import Projects from './components/Projects';
+import Statement from './components/Reel';
 import { Background, Beyond, Contact, Experience, Skills } from './components/Sections';
 import { scroll, scrollToId } from './lib/scroll';
+import { bindUiSounds } from './lib/sound';
 
 /** Colour themes. The first one is the default. */
 const THEMES = [
@@ -17,7 +19,7 @@ const THEMES = [
   { id: 'graphite', name: 'Graphite mint', swatch: '#7fd6cb', bg: '#20252d' },
 ] as const;
 
-/** Set to false to hide the theme picker once a theme is chosen (DEFAULT_THEME stays). */
+/** Set to true to show a theme picker bar while choosing a theme. */
 const SHOW_THEME_PICKER = false;
 const DEFAULT_THEME: (typeof THEMES)[number]['id'] = 'lumen';
 
@@ -31,6 +33,17 @@ function ThemePicker({ theme, onPick }: { theme: string; onPick: (id: string) =>
           {t.name}
         </button>
       ))}
+    </div>
+  );
+}
+
+/** Thin bar on the right edge showing how far down the page you are. */
+function ScrollIndicator() {
+  const { scrollYProgress } = useScroll();
+  const y = useSpring(scrollYProgress, { stiffness: 220, damping: 40 });
+  return (
+    <div className="scroll-indicator" aria-hidden>
+      <motion.span style={{ scaleY: y }} />
     </div>
   );
 }
@@ -66,17 +79,21 @@ export default function App() {
     document.documentElement.dataset.theme = theme;
     const bg = THEMES.find((t) => t.id === theme)?.bg ?? '#f0f1f8';
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bg);
-    try {
-      localStorage.setItem('theme', theme);
-    } catch {
-      /* storage blocked: fine */
+    if (SHOW_THEME_PICKER) {
+      try {
+        localStorage.setItem('theme', theme);
+      } catch {
+        /* storage blocked: fine */
+      }
     }
   }, [theme]);
+
+  useEffect(() => bindUiSounds(), []);
 
   // Smooth scrolling
   useEffect(() => {
     if (reduced) return;
-    const lenis = new Lenis({ lerp: 0.09, smoothWheel: true });
+    const lenis = new Lenis({ lerp: 0.085, smoothWheel: true });
     scroll.lenis = lenis;
     let raf = requestAnimationFrame(function loop(t) {
       lenis.raf(t);
@@ -103,7 +120,8 @@ export default function App() {
       </a>
       <Nav onNavigate={scrollToId} />
       <main id="main">
-        <Hero key={intro ? 'pre' : 'live'} onNavigate={scrollToId} reduced={reduced} />
+        <Hero key={intro ? 'pre' : 'live'} reduced={reduced} />
+        <Statement onNavigate={scrollToId} reduced={reduced} />
         <About />
         <Projects />
         <Experience />
@@ -112,6 +130,7 @@ export default function App() {
         <Beyond />
         <Contact onTop={() => scrollToId('top')} />
       </main>
+      <ScrollIndicator />
       {SHOW_THEME_PICKER && <ThemePicker theme={theme} onPick={setTheme} />}
     </>
   );

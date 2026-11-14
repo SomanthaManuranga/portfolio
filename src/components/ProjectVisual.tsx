@@ -221,7 +221,7 @@ function Maze() {
       <path d="M58 104 V70 H140 V38 H190 V70 H236 V38 H262" className="pv-accent-line pv-draw" pathLength={600} />
       <circle cx="58" cy="104" r="5" className="pv-node" />
       <circle cx="262" cy="38" r="5" className="pv-fill-accent" />
-      <text x="40" y="134" className="pv-label">A* route on the occupancy grid</text>
+      <text x="40" y="134" className="pv-label">unknown maze · SLAM + A*</text>
     </svg>
   );
 }
@@ -234,7 +234,7 @@ function Bars() {
       {hs.map((h, i) => (
         <rect key={i} x={44 + i * 27} y={114 - h} width="16" height={h} rx="2" className={`pv-bar ${i === hs.length - 1 ? 'hi' : ''}`} style={{ animationDelay: `${i * 0.08}s` }} />
       ))}
-      <text x="34" y="132" className="pv-label">model comparison</text>
+      <text x="34" y="132" className="pv-label">R² by model · stacked on the right</text>
     </svg>
   );
 }
@@ -315,6 +315,63 @@ function Dashboard() {
   );
 }
 
+function FloorPlan() {
+  // Hospital floor: rooms off a corridor, an order arriving over MQTT, the robot's route
+  const rooms = [40, 96, 152, 208];
+  return (
+    <svg viewBox="0 0 320 140" className="pv">
+      {rooms.map((x, i) => (
+        <g key={x}>
+          <rect x={x} y="18" width="48" height="34" rx="3" className="pv-fill-soft" />
+          <text x={x + 6} y="31" className="pv-label">{101 + i}</text>
+        </g>
+      ))}
+      {rooms.map((x) => (
+        <rect key={`b${x}`} x={x} y="88" width="48" height="34" rx="3" className="pv-fill-soft" />
+      ))}
+      <path d="M30 70 H180 V56" className="pv-accent-line pv-draw" pathLength={600} />
+      <rect x="22" y="62" width="16" height="16" rx="4" className="pv-gate" />
+      <circle cx="180" cy="46" r="5" className="pv-fill-accent pv-fade" />
+      <g>
+        <rect x="270" y="58" width="38" height="24" rx="5" className="pv-fill-soft" />
+        <text x="276" y="74" className="pv-label">MQTT</text>
+        <path d="M270 70 H196" className="pv-stream" />
+      </g>
+      <text x="40" y="134" className="pv-label">order → route → room 103</text>
+    </svg>
+  );
+}
+
+function Ranking() {
+  // Options ranked under uncertainty: one clear winner, with spread
+  const rows = [
+    { w: 196, spread: 26, hi: true },
+    { w: 132, spread: 40, hi: false },
+    { w: 96, spread: 34, hi: false },
+  ];
+  return (
+    <svg viewBox="0 0 320 140" className="pv">
+      <line x1="60" y1="16" x2="60" y2="112" className="pv-line" />
+      {rows.map((r, i) => (
+        <g key={i}>
+          <text x="34" y={41 + i * 30} className="pv-label">0{i + 1}</text>
+          <rect
+            x="60"
+            y={30 + i * 30}
+            width={r.w}
+            height="16"
+            rx="3"
+            className={r.hi ? 'pv-fill-accent' : 'pv-fill-soft'}
+            style={{ transformBox: 'fill-box', transformOrigin: 'left', animation: `pvGrowX 4s cubic-bezier(0.22,1,0.36,1) ${i * 0.15}s infinite` }}
+          />
+          <line x1={60 + r.w - r.spread} y1={38 + i * 30} x2={60 + r.w + r.spread} y2={38 + i * 30} className="pv-line" style={{ stroke: '#f3f4f8' }} />
+        </g>
+      ))}
+      <text x="60" y="132" className="pv-label">10,000 Monte Carlo draws</text>
+    </svg>
+  );
+}
+
 function Network() {
   const layers = [3, 5, 5, 2];
   const nodes = layers.flatMap((n, l) =>
@@ -343,9 +400,9 @@ const map: Record<string, () => JSX.Element> = {
   'layoutlmv3-funsd': Document,
   'corrosion-segmentation': Segmentation,
   'rosbot-maze': Maze,
-  'alia-digital-twin': Maze,
+  'alia-digital-twin': FloorPlan,
   'ml-challenge': Bars,
-  'study-program-intelligence': Bars,
+  'study-program-intelligence': Ranking,
   'social-media-eda': Scatter,
   'ir-thermometer': Signal,
   'corexy-printer': Printer,

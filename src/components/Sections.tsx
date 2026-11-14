@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowUp, ArrowUpRight, Check, ChevronLeft, ChevronRight, Copy, Download, FileText } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -12,7 +12,7 @@ import {
   talks,
   venture,
 } from '../data/content';
-import { asset, GithubIcon, LinkedinIcon, Reveal, SectionHead } from './ui';
+import { asset, GithubIcon, LinkedinIcon, Reveal, RollText, SectionHead } from './ui';
 
 /* ================================================================== */
 /*  Experience                                                         */
@@ -21,7 +21,7 @@ export function Experience() {
   return (
     <section className="section" id="experience">
       <div className="container">
-        <SectionHead eyebrow="Experience" title={<>Industry experience, engineering first</>} />
+        <SectionHead eyebrow="Experience" title="Industry experience, engineering first" />
         <div className="rows">
           {experience.map((job, i) => (
             <Reveal key={job.company} delay={0.05 * i} as="article" className="row">
@@ -74,7 +74,7 @@ export function Skills() {
   return (
     <section className="section" id="skills">
       <div className="container">
-        <SectionHead eyebrow="Toolkit" title={<>The stack behind the work</>} />
+        <SectionHead eyebrow="Toolkit" title="The stack behind the work" />
         <div className="skill-cols">
           {skillGroups.map((g, i) => (
             <Reveal key={g.title} delay={0.05 * i} className="skill-col">
@@ -102,7 +102,7 @@ export function Background() {
   return (
     <section className="section" id="education">
       <div className="container">
-        <SectionHead eyebrow="Education" title={<>Education and continuous learning</>} />
+        <SectionHead eyebrow="Education" title="Education and continuous learning" />
         <div className="rows">
           {education.map((e, i) => (
             <Reveal key={e.school} delay={0.05 * i} as="article" className="row">
@@ -262,7 +262,7 @@ export function Beyond() {
   return (
     <section className="section" id="beyond">
       <div className="container">
-        <SectionHead eyebrow="Beyond" title={<>Maker, teammate, founder</>} />
+        <SectionHead eyebrow="Beyond" title="Maker, teammate, founder" />
         <Reveal className="venture">
           <div className="venture-text">
             <span className="label">Entrepreneurship</span>
@@ -294,10 +294,16 @@ export function Beyond() {
 }
 
 /* ================================================================== */
-/*  Contact (closing panel with the footer inside)                     */
+/*  Closing panel, moving strip and footer                             */
 /* ================================================================== */
+const STRIP = ['Computer vision', 'LLMs & NLP', 'Industrial AI', 'Automation', 'Robotics', 'Open to thesis topics'];
+
 export function Contact({ onTop }: { onTop: () => void }) {
   const [copied, setCopied] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'start 0.25'] });
+  const scale = useTransform(scrollYProgress, [0, 1], [0.9, 1]);
+
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(profile.email);
@@ -307,56 +313,88 @@ export function Contact({ onTop }: { onTop: () => void }) {
       window.location.href = `mailto:${profile.email}`;
     }
   };
+
   return (
     <section className="contact" id="contact">
       <div className="container">
-        <Reveal className="contact-panel dark-panel">
-          <span className="label">Contact</span>
-          <h2>
-            Let's build
-            <br />
-            something <span className="accent">real.</span>
-          </h2>
-          <div className="contact-row">
-            <p>
-              I'm always happy to talk about computer vision, LLMs and industrial AI, and about thesis topics or AI/ML
-              engineering opportunities in Germany.
-            </p>
-            <div className="email-wrap">
-              <a className="email-link" href={`mailto:${profile.email}`}>
-                {profile.email}
-              </a>
-              <button className="pill small" onClick={copy} aria-live="polite">
-                {copied ? 'Copied' : 'Copy'} {copied ? <Check /> : <Copy />}
-              </button>
+        <motion.div ref={ref} className="end dark-panel" style={{ scale }}>
+          <div className="end-crosses label" aria-hidden>
+            <span className="plus">+</span>
+            <span className="plus">+</span>
+            <span className="plus">+</span>
+          </div>
+          <p className="end-sub label">Have a role, a thesis topic or a project in mind?</p>
+          <a className="end-title roll-host" href={`mailto:${profile.email}`}>
+            <RollText text="Let's work together!" />
+          </a>
+          <div className="end-strip" aria-hidden>
+            <div>
+              {[...STRIP, ...STRIP, ...STRIP, ...STRIP].map((s, i) => (
+                <span key={i}>{s}</span>
+              ))}
             </div>
           </div>
-          <div className="contact-links">
-            <a className="pill small" href={profile.linkedin} target="_blank" rel="noopener">
-              <LinkedinIcon /> LinkedIn
-            </a>
-            <a className="pill small" href={profile.github} target="_blank" rel="noopener">
-              <GithubIcon /> GitHub
-            </a>
-            <a className="pill small" href={profile.phoneHref}>
-              {profile.phone}
-            </a>
-            <a className="pill small" href={asset(profile.cv)} target="_blank" rel="noopener">
-              CV (English) <Download />
-            </a>
-            <a className="pill small" href={asset(profile.cvDe)} target="_blank" rel="noopener">
-              Lebenslauf (Deutsch) <Download />
-            </a>
+        </motion.div>
+
+        <footer className="footer">
+          <div className="footer-cols">
+            <div>
+              <span className="label">Based in</span>
+              <p>
+                {profile.location}
+                <br />
+                {profile.availability}
+              </p>
+            </div>
+            <div>
+              <span className="label">Contact</span>
+              <p>
+                <a className="roll-host" href={`mailto:${profile.email}`}>
+                  <RollText text={profile.email} />
+                </a>
+                <br />
+                <a className="roll-host" href={profile.phoneHref}>
+                  <RollText text={profile.phone} />
+                </a>
+              </p>
+              <button className="pill small" onClick={copy} aria-live="polite" style={{ marginTop: 12 }}>
+                {copied ? 'Copied' : 'Copy email'} {copied ? <Check /> : <Copy />}
+              </button>
+            </div>
+            <div>
+              <span className="label">Profiles</span>
+              <p>
+                <a className="roll-host with-icon" href={profile.linkedin} target="_blank" rel="noopener">
+                  <LinkedinIcon /> <RollText text="LinkedIn" />
+                </a>
+                <br />
+                <a className="roll-host with-icon" href={profile.github} target="_blank" rel="noopener">
+                  <GithubIcon /> <RollText text="GitHub" />
+                </a>
+              </p>
+            </div>
+            <div>
+              <span className="label">Curriculum vitae</span>
+              <div className="footer-pills">
+                <a className="pill small dark" href={asset(profile.cv)} target="_blank" rel="noopener">
+                  English <Download />
+                </a>
+                <a className="pill small" href={asset(profile.cvDe)} target="_blank" rel="noopener">
+                  Deutsch <Download />
+                </a>
+              </div>
+            </div>
           </div>
-          <div className="contact-foot label">
+          <div className="footer-bottom label">
             <span>
-              © {new Date().getFullYear()} {profile.name} • {profile.location}
+              © {new Date().getFullYear()} {profile.name}
             </span>
-            <button className="pill small" onClick={onTop}>
-              Back to top <ArrowUp />
+            <span>Built with React and Three.js</span>
+            <button className="round-btn" onClick={onTop} aria-label="Back to top">
+              <ArrowUp />
             </button>
           </div>
-        </Reveal>
+        </footer>
       </div>
     </section>
   );

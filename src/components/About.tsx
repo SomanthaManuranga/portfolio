@@ -1,6 +1,6 @@
 import { Download } from 'lucide-react';
 import { principles, profile, stats } from '../data/content';
-import { asset, CountUp, Reveal, SectionHead } from './ui';
+import { asset, CountUp, Reveal, ScrollWords, SectionHead } from './ui';
 
 function Portrait() {
   return (
@@ -18,17 +18,13 @@ export default function About() {
   return (
     <section className="section" id="about">
       <div className="container">
-        <SectionHead eyebrow="About" title={<>From mechanical systems to intelligent ones</>} />
+        <SectionHead eyebrow="About" title="From mechanical systems to intelligent ones" />
         <div className="about-grid">
           <div>
-            <Reveal>
-              <p className="about-lead">
-                I build AI for the physical world: factory floors, inspection lines and robots.
-              </p>
-            </Reveal>
-            <Reveal delay={0.08}>
-              <p className="about-body">{profile.summary}</p>
-            </Reveal>
+            <ScrollWords
+              className="about-lead"
+              text="I build AI for the physical world: factory floors, inspection lines and robots. Careful evaluation, honest failure analysis, and models small enough to deploy."
+            />
             <Reveal delay={0.12} className="about-cta">
               <a className="pill dark" href={asset(profile.cv)} target="_blank" rel="noopener">
                 Download CV <Download />

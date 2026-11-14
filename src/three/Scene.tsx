@@ -17,8 +17,12 @@ function useInputListeners() {
     const onMove = (e: PointerEvent) => {
       if (e.pointerType !== 'mouse') return;
       input.hasPointer = true;
-      input.mx = (e.clientX / window.innerWidth) * 2 - 1;
-      input.my = -((e.clientY / window.innerHeight) * 2 - 1);
+      // Position relative to the hero panel, so the light and the beads sit under the cursor
+      const r = document.querySelector('.hero-panel')?.getBoundingClientRect();
+      const nx = r ? ((e.clientX - r.left) / r.width) * 2 - 1 : (e.clientX / window.innerWidth) * 2 - 1;
+      const ny = r ? ((e.clientY - r.top) / r.height) * 2 - 1 : (e.clientY / window.innerHeight) * 2 - 1;
+      input.mx = Math.max(-1.5, Math.min(1.5, nx));
+      input.my = -Math.max(-1.5, Math.min(1.5, ny));
     };
     const onScroll = () => {
       input.hero = Math.min(1.4, window.scrollY / window.innerHeight);
@@ -118,6 +122,81 @@ function Gimbal({ segments }: { segments: number }) {
         <boxGeometry args={[1, 1, 1]} />
       </instancedMesh>
     </group>
+  );
+}
+
+/**
+ * Small metal beads drifting around the gimbal. Each one is tied to a home position
+ * by a spring and pushed away by the pointer, so moving the mouse stirs them.
+ */
+function Beads({ count }: { count: number }) {
+  const mesh = useRef<THREE.InstancedMesh>(null!);
+  const { viewport } = useThree();
+  const state = useMemo(() => {
+    const home = new Float32Array(count * 3);
+    const pos = new Float32Array(count * 3);
+    const vel = new Float32Array(count * 3);
+    const size = new Float32Array(count);
+    for (let i = 0; i < count; i++) {
+      const a = (i / count) * Math.PI * 2 + Math.random() * 0.5;
+      const r = 3.4 + Math.random() * 2.6;
+      home[i * 3] = Math.cos(a) * r * 1.35;
+      home[i * 3 + 1] = Math.sin(a) * r * 0.62;
+      home[i * 3 + 2] = (Math.random() - 0.5) * 2.2;
+      pos.set(home.subarray(i * 3, i * 3 + 3), i * 3);
+      size[i] = 0.05 + Math.random() * 0.09;
+    }
+    return { home, pos, vel, size };
+  }, [count]);
+  const material = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: '#aeb4be', metalness: 0.95, roughness: 0.22, envMapIntensity: 1.1 }),
+    [],
+  );
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+
+  useFrame((clock, dtRaw) => {
+    const dt = Math.min(dtRaw, 0.05);
+    const t = clock.clock.elapsedTime;
+    // Pointer position on the z = 0 plane, in world units
+    const px = (input.mx * viewport.width) / 2;
+    const py = (input.my * viewport.height) / 2;
+    const { home, pos, vel, size } = state;
+    for (let i = 0; i < count; i++) {
+      const k = i * 3;
+      // Spring back to a slowly bobbing home position
+      const hx = home[k] + Math.sin(t * 0.3 + i) * 0.25;
+      const hy = home[k + 1] + Math.cos(t * 0.24 + i * 1.7) * 0.25;
+      let ax = (hx - pos[k]) * 2.2;
+      let ay = (hy - pos[k + 1]) * 2.2;
+      const az = (home[k + 2] - pos[k + 2]) * 2.2;
+      if (input.hasPointer) {
+        const dx = pos[k] - px;
+        const dy = pos[k + 1] - py;
+        const d2 = dx * dx + dy * dy + 0.05;
+        if (d2 < 5) {
+          const f = 9 / d2;
+          ax += (dx / Math.sqrt(d2)) * f;
+          ay += (dy / Math.sqrt(d2)) * f;
+        }
+      }
+      vel[k] = (vel[k] + ax * dt) * 0.92;
+      vel[k + 1] = (vel[k + 1] + ay * dt) * 0.92;
+      vel[k + 2] = (vel[k + 2] + az * dt) * 0.92;
+      pos[k] += vel[k] * dt;
+      pos[k + 1] += vel[k + 1] * dt;
+      pos[k + 2] += vel[k + 2] * dt;
+      dummy.position.set(pos[k], pos[k + 1], pos[k + 2]);
+      dummy.scale.setScalar(size[i]);
+      dummy.updateMatrix();
+      mesh.current.setMatrixAt(i, dummy.matrix);
+    }
+    mesh.current.instanceMatrix.needsUpdate = true;
+  });
+
+  return (
+    <instancedMesh ref={mesh} args={[undefined, undefined, count]} material={material} frustumCulled={false}>
+      <sphereGeometry args={[1, 24, 24]} />
+    </instancedMesh>
   );
 }
 
@@ -226,6 +305,7 @@ export default function Scene({ reducedMotion, accent }: { reducedMotion: boolea
       <Rig mobile={mobile} accent={accent}>
         <Gimbal segments={lowPower ? 120 : 220} />
       </Rig>
+      <Beads count={lowPower ? 14 : 26} />
       <Dust count={lowPower ? 200 : 460} />
     </Canvas>
   );
