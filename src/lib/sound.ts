@@ -3,25 +3,23 @@
  * Off by default: browsers only allow sound after a click, and nobody likes a page
  * that starts making noise by itself. The header button turns it on.
  *
- * The sound is a calm outdoor scene made only from filtered noise, the way wind and
- * water are: a slow swell like wind moving through trees, a small stream, and a
- * breeze that rises while the page is scrolled. There are no musical tones or hums.
+ * The sound is a set of soft chimes, like a kalimba or a wind chime in a quiet room.
+ * There is no continuous sound at all: no hum, no hiss. Scrolling plays notes up and
+ * down a gentle scale, a rare single note drifts in while the page is still, and
+ * buttons answer with one low note.
  */
 
 type Listener = (on: boolean) => void;
 
-type Layer = { gain: GainNode; filter: BiquadFilterNode; nodes: AudioScheduledSourceNode[] };
+/** G major pentatonic over two octaves: any order of these notes sounds calm together. */
+const SCALE = [196.0, 220.0, 246.94, 293.66, 329.63, 392.0, 440.0, 493.88, 587.33, 659.25];
 
 class SoundEngine {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private bus: GainNode | null = null;
-  private pink: AudioBuffer | null = null;
-  private white: AudioBuffer | null = null;
-  private trees: Layer | null = null;
-  private stream: Layer | null = null;
-  private breeze: Layer | null = null;
   private listeners = new Set<Listener>();
+  private idle = 0;
   on = false;
 
   subscribe(fn: Listener) {
@@ -50,81 +48,32 @@ class SoundEngine {
       this.master.gain.value = 0;
       this.master.connect(ctx.destination);
 
-      // A little room around everything, so nothing sounds close and dry
+      // Notes go through a gentle filter (takes the edge off) and a soft room echo
       this.bus = ctx.createGain();
-      this.bus.connect(this.master);
+      const warm = ctx.createBiquadFilter();
+      warm.type = 'lowpass';
+      warm.frequency.value = 2600;
+      warm.Q.value = 0.2;
+      this.bus.connect(warm).connect(this.master);
       const room = ctx.createConvolver();
-      room.buffer = this.tail(ctx, 2.4);
+      room.buffer = this.tail(ctx, 3);
       const wet = ctx.createGain();
-      wet.gain.value = 0.22;
-      this.bus.connect(room).connect(wet).connect(this.master);
-
-      this.white = this.noise(ctx, 5, false);
-      this.pink = this.noise(ctx, 7, true);
+      wet.gain.value = 0.42;
+      warm.connect(room).connect(wet).connect(this.master);
     }
     if (this.ctx.state === 'suspended') void this.ctx.resume();
     return true;
   }
 
-  /** Noise to shape into wind and water. Pink noise is the softer, more natural-sounding kind. */
-  private noise(ctx: AudioContext, seconds: number, pink: boolean) {
-    const length = Math.floor(ctx.sampleRate * seconds);
-    const data = new Float32Array(length);
-    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
-    for (let i = 0; i < length; i++) {
-      const w = Math.random() * 2 - 1;
-      if (!pink) {
-        data[i] = w;
-        continue;
-      }
-      b0 = 0.99886 * b0 + w * 0.0555179;
-      b1 = 0.99332 * b1 + w * 0.0750759;
-      b2 = 0.969 * b2 + w * 0.153852;
-      b3 = 0.8665 * b3 + w * 0.3104856;
-      b4 = 0.55 * b4 + w * 0.5329522;
-      b5 = -0.7616 * b5 - w * 0.016898;
-      data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362) * 0.11;
-      b6 = w * 0.115926;
-    }
-    // Fade the ends into each other so the loop has no click
-    const fade = Math.floor(ctx.sampleRate * 0.25);
-    for (let i = 0; i < fade; i++) {
-      const k = i / fade;
-      data[i] = data[i] * k + data[length - fade + i] * (1 - k);
-    }
-    const out = ctx.createBuffer(1, length - fade, ctx.sampleRate);
-    out.getChannelData(0).set(data.subarray(0, length - fade));
-    return out;
-  }
-
-  /** A short reverb tail made from fading noise. */
+  /** The room echo: a fading tail that only sounds while a note rings through it. */
   private tail(ctx: AudioContext, seconds: number) {
     const length = Math.floor(ctx.sampleRate * seconds);
     const buffer = ctx.createBuffer(2, length, ctx.sampleRate);
     for (let ch = 0; ch < 2; ch++) {
       const data = buffer.getChannelData(ch);
-      for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 3.4);
+      for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 3.6);
     }
     return buffer;
-  }
-
-  private source(buffer: AudioBuffer, offset = 0) {
-    const src = this.ctx!.createBufferSource();
-    src.buffer = buffer;
-    src.loop = true;
-    src.start(0, offset);
-    return src;
-  }
-
-  /** A slow wave that moves a parameter up and down, e.g. once every 12 seconds. */
-  private drift(target: AudioParam, rate: number, depth: number) {
-    const osc = this.ctx!.createOscillator();
-    osc.frequency.value = rate;
-    const g = this.ctx!.createGain();
-    g.gain.value = depth;
-    osc.connect(g).connect(target);
-    osc.start();
-    return osc;
   }
 
   toggle() {
@@ -142,141 +91,96 @@ class SoundEngine {
     if (this.ctx && this.master) {
       const t = this.ctx.currentTime;
       this.master.gain.cancelScheduledValues(t);
-      this.master.gain.setTargetAtTime(on ? 1 : 0, t, on ? 0.9 : 0.2);
-      if (on) this.start();
-      else this.stop();
+      this.master.gain.setTargetAtTime(on ? 1 : 0, t, on ? 0.05 : 0.2);
+    }
+    window.clearTimeout(this.idle);
+    if (on) {
+      // A small rising phrase says "sound is on"
+      this.chime(SCALE[2], 0.05);
+      this.chime(SCALE[4], 0.045, 0.16);
+      this.chime(SCALE[6], 0.04, 0.34);
+      this.breathe();
     }
     this.listeners.forEach((fn) => fn(on));
   }
 
-  private start() {
-    if (!this.ctx || !this.bus || !this.pink || !this.white || this.trees) return;
-    const ctx = this.ctx;
-
-    // Wind in the trees: low, soft, rising and falling over many seconds
-    {
-      const src = this.source(this.pink);
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.value = 620;
-      filter.Q.value = 0.3;
-      const gain = ctx.createGain();
-      gain.gain.value = 0.2;
-      src.connect(filter).connect(gain).connect(this.bus);
-      const a = this.drift(gain.gain, 0.083, 0.09);
-      const b = this.drift(gain.gain, 0.031, 0.05);
-      const c = this.drift(filter.frequency, 0.057, 210);
-      this.trees = { gain, filter, nodes: [src, a, b, c] };
-    }
-
-    // A small stream: a steady soft rush, plus a narrower band that wanders to give the trickle
-    {
-      const src = this.source(this.pink, 2.5);
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.value = 1500;
-      filter.Q.value = 0.55;
-      const gain = ctx.createGain();
-      gain.gain.value = 0.085;
-      src.connect(filter).connect(gain).connect(this.bus);
-
-      const src2 = this.source(this.white, 1.1);
-      const trickle = ctx.createBiquadFilter();
-      trickle.type = 'bandpass';
-      trickle.frequency.value = 2300;
-      trickle.Q.value = 5;
-      const tg = ctx.createGain();
-      tg.gain.value = 0.012;
-      src2.connect(trickle).connect(tg).connect(gain);
-      const a = this.drift(trickle.frequency, 3.3, 420);
-      const b = this.drift(trickle.frequency, 5.9, 260);
-      const c = this.drift(tg.gain, 0.9, 0.005);
-      this.stream = { gain, filter, nodes: [src, src2, a, b, c] };
-    }
-
-    // The breeze that follows scrolling: silent until the page moves
-    {
-      const src = this.source(this.pink, 4.2);
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.value = 520;
-      filter.Q.value = 0.5;
-      const gain = ctx.createGain();
-      gain.gain.value = 0;
-      src.connect(filter).connect(gain).connect(this.bus);
-      this.breeze = { gain, filter, nodes: [src] };
-    }
-  }
-
-  private stop() {
-    if (!this.ctx) return;
-    const t = this.ctx.currentTime;
-    for (const layer of [this.trees, this.stream, this.breeze]) {
-      if (!layer) continue;
-      layer.gain.gain.cancelScheduledValues(t);
-      layer.gain.gain.setTargetAtTime(0, t, 0.25);
-      layer.nodes.forEach((n) => n.stop(t + 1.5));
-    }
-    this.trees = this.stream = this.breeze = null;
+  /** Now and then, while the page is still, one quiet note. */
+  private breathe() {
+    this.idle = window.setTimeout(
+      () => {
+        if (!this.on) return;
+        if (!document.hidden) {
+          const i = Math.floor(Math.random() * SCALE.length);
+          this.chime(SCALE[i], 0.018);
+          if (Math.random() < 0.4) this.chime(SCALE[Math.min(SCALE.length - 1, i + 2)], 0.014, 0.35);
+        }
+        this.breathe();
+      },
+      8000 + Math.random() * 9000,
+    );
   }
 
   /**
-   * Called while the page scrolls. `speed` runs from 0 (still) to 1 (fast):
-   * a breeze picks up and the stream brightens a little, then both settle again.
+   * One chime: a pure note with two quieter overtones that fade faster, the way a
+   * struck bar or tine sounds. A soft start avoids any click.
    */
-  scroll(speed: number) {
-    if (!this.on || !this.ctx) return;
-    const s = Math.min(1, Math.max(0, speed));
-    const t = this.ctx.currentTime;
-    if (this.breeze) {
-      this.breeze.gain.gain.setTargetAtTime(s * 0.34, t, s > 0 ? 0.25 : 0.9);
-      this.breeze.filter.frequency.setTargetAtTime(520 + s * 520, t, 0.4);
+  private chime(freq: number, vol: number, delay = 0, length = 1) {
+    if (!this.on || !this.ctx || !this.bus) return;
+    const ctx = this.ctx;
+    const t = ctx.currentTime + delay;
+    const tune = 1 + (Math.random() - 0.5) * 0.004;
+    const partials: [number, number, number][] = [
+      // multiple of the note, level, seconds to fade
+      [1, 1, 2.6 * length],
+      [2, 0.2, 1.1 * length],
+      [4.02, 0.07, 0.4 * length],
+    ];
+    for (const [ratio, level, fade] of partials) {
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = freq * ratio * tune;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(vol * level, t + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + fade);
+      osc.connect(g).connect(this.bus);
+      osc.start(t);
+      osc.stop(t + fade + 0.05);
     }
-    if (this.stream) this.stream.filter.frequency.setTargetAtTime(1500 + s * 500, t, 0.5);
   }
 
-  /** A short soft puff of filtered noise: a tap, a pebble, a gust. Never a beep. */
-  private puff(freq: number, to: number, dur: number, vol: number, q = 1.2) {
-    if (!this.on || !this.ctx || !this.bus || !this.pink) return;
-    const ctx = this.ctx;
-    const t = ctx.currentTime;
-    const src = ctx.createBufferSource();
-    src.buffer = this.pink;
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.Q.value = q;
-    filter.frequency.setValueAtTime(freq, t);
-    filter.frequency.exponentialRampToValueAtTime(to, t + dur);
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(vol, t + Math.min(0.06, dur * 0.3));
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    src.connect(filter).connect(g).connect(this.bus);
-    src.start(t, Math.random() * 3);
-    src.stop(t + dur + 0.05);
+  /** A note of the scale, played by scrolling. `strength` (0 to 1) is how fast the page is moving. */
+  scrollNote(index: number, strength: number) {
+    const i = Math.max(0, Math.min(SCALE.length - 1, index));
+    this.chime(SCALE[i], 0.022 + Math.min(1, strength) * 0.028);
+  }
+  get notes() {
+    return SCALE.length;
   }
 
   /** Hovering is silent on purpose: a calm page does not tick as the mouse moves. */
   hover() {}
   click() {
-    this.puff(900, 420, 0.16, 0.5, 2.2);
+    this.chime(SCALE[0], 0.04, 0, 0.5);
   }
   open() {
-    this.puff(380, 1300, 0.6, 0.45);
+    this.chime(SCALE[3], 0.04);
+    this.chime(SCALE[5], 0.035, 0.12);
   }
   close() {
-    this.puff(1300, 380, 0.55, 0.4);
+    this.chime(SCALE[5], 0.035);
+    this.chime(SCALE[3], 0.04, 0.12);
   }
   step() {
-    this.puff(700, 900, 0.3, 0.3);
+    this.chime(SCALE[4], 0.035, 0, 0.6);
   }
 }
 
 export const sound = new SoundEngine();
 
 /**
- * Wires the page to the sound, once: soft taps on links and buttons, and the breeze
- * that follows how fast the page is scrolled.
+ * Wires the page to the sound, once: one low note on links and buttons, and chimes
+ * that play as the page is scrolled, climbing on the way down and falling on the way up.
  */
 export function bindUiSounds() {
   const pick = (t: EventTarget | null) => (t instanceof Element ? t.closest('a, button, [role="button"]') : null);
@@ -285,24 +189,29 @@ export function bindUiSounds() {
     if (el && !el.hasAttribute('data-sound-toggle')) sound.click();
   };
 
-  // Scroll speed, smoothed
   let lastY = window.scrollY;
   let lastT = performance.now();
-  let speed = 0;
-  let rest = 0;
+  let lastNote = 0;
+  let travelled = 0;
+  let note = 3;
   const onScroll = () => {
     const now = performance.now();
-    const dt = Math.max(8, now - lastT);
-    const v = (Math.abs(window.scrollY - lastY) / dt) * 1000;
+    const dy = window.scrollY - lastY;
+    const speed = Math.abs(dy) / Math.max(8, now - lastT);
     lastY = window.scrollY;
     lastT = now;
-    speed += (Math.min(1, v / (window.innerHeight * 2.2)) - speed) * 0.3;
-    sound.scroll(speed);
-    window.clearTimeout(rest);
-    rest = window.setTimeout(() => {
-      speed = 0;
-      sound.scroll(0);
-    }, 160);
+    travelled += Math.abs(dy);
+    // A new note after a short stretch of scrolling, never faster than a gentle pace
+    if (travelled < 170 || now - lastNote < 150 || !sound.on) return;
+    travelled = 0;
+    lastNote = now;
+    const dir = dy >= 0 ? 1 : -1;
+    const stride = Math.random() < 0.7 ? 1 : 2;
+    note += Math.random() < 0.82 ? dir * stride : -dir;
+    // At either end of the scale, fold back by half an octave and carry on
+    if (note >= sound.notes) note -= 4;
+    if (note < 0) note += 4;
+    sound.scrollNote(note, speed / 2.5);
   };
 
   document.addEventListener('click', click, { passive: true });
@@ -310,6 +219,5 @@ export function bindUiSounds() {
   return () => {
     document.removeEventListener('click', click);
     window.removeEventListener('scroll', onScroll);
-    window.clearTimeout(rest);
   };
 }

@@ -10,7 +10,7 @@ Personal portfolio: an interactive 3D site built with **React, Three.js (react-t
 - Hero: a 3D scene in a dark rounded panel. A cluster of machine parts (gears, nuts, bearings, blocks) in blue, black and white that collide, move away from the cursor and scatter on a click. The physics is a small hand-written solver in `src/three/Scene.tsx`
 - Scroll-driven motion: ribbon lines that draw themselves behind the headings (`Ribbon` in `src/components/ui.tsx`), a pinned work reel that grows from a blue-tinted thumbnail to the full screen, text that fills in as you read, and a closing card that straightens and zooms into a full dark screen
 - About: one short line whose ending rotates through four phrases (`aboutPhrases` in `src/data/content.ts`). Skills: a moving band of skill names above cards whose chips pop in
-- Sound (off until the header button is pressed): a calm outdoor scene made only from filtered noise (wind in trees, a small stream, and a breeze that rises with scroll speed), synthesised in `src/lib/sound.ts`
+- Sound (off until the header button is pressed): soft chime notes with no continuous sound. Scrolling plays notes up and down a gentle scale; synthesised in `src/lib/sound.ts`
 - Headings mix black and grey words: wrap words in asterisks in a `SectionHead` title to set them in grey
 - Rolling-letter hover on buttons, menu links and project titles; headings that rise word by word
 - Optional sound (header button, off by default): a quiet ambient pad and small interface sounds, synthesised in the browser with no audio files
